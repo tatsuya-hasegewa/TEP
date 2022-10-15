@@ -1,0 +1,62 @@
+TEP-16開発環境メモ		東海大学 清水尚彦
+
+1. LiveCygwinパッケージのダウンロードとインストール
+
+	http://www.ip-arch.jp/#LiveCygwin
+
+
+2. 添付パッケージの展開
+   homeのエクスプローラ画面に、TEP.zipをコピーし、
+   Windowsで展開
+
+3. LCCのダウンロード
+   LCCのホームページ
+   
+   http://www.cs.princeton.edu/software/lcc/ 
+
+   から、4.2.tar.gzをダウンロード
+   TEP/lccにコピーし展開
+   tar xzf 4.2.tar.gz
+
+
+4. LCCの作成
+   LiveCygwinコンソール画面において、
+   cd TEP/lcc
+   patch -p1 < lcc-tep.patch
+   make all install
+   で、LCCを作成し、インストールする。
+
+5. FPGA合成ファイルの作成
+   cd /home/TEP
+   make synthe
+   で、モニタプログラム (mon.c)をコンパイルして、
+   CPU回路のVerilogへの変換を行なった後、
+   XilinxディレクトリにISEに必要なファイルを転送する。
+   これらをISEで合成することで、シリアルポートからの
+   入出力を行なう、マシン語モニタイメージを含め、論理合成できる。
+
+   CPU単体のVerilogファイルは、
+   nsl2vl tep.nsl -O
+   として、作成する。
+
+6. 論理シミュレーション
+   make TARGET=hello sim
+   のように、TARGETにCプログラムのファイル名(拡張子含まず)を指定すると、
+   コンパイルして論理シミュレーションの実行をする。
+   シミュレーションは、VCDファイルを生成するので、
+   gtkwave tep.vcd sys.sig
+   とすると、波形が見られる。
+
+7. プログラムコンパイル
+   lcc -S foo.c
+   として、foo.sを作成する。
+   その後、
+   sh asm.sh foo.s
+   とすることで、スタートアップルーチンを含む、メモリファイルを作成する。
+   この16進ファイルは、ISEでも、論理シミュレーションでも利用可能。
+   注意： スタートアップルーチンは、main関数を呼び出すので、mainがないとNG。
+
+
+
+以上
+

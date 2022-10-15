@@ -1,0 +1,55 @@
+/*
+  baud pulse must be 16 times faster than buad rate
+*/
+module serial_in {
+
+ reg rxd0[8], rxd1[8], baud_cmp[4], rxdi, rxdf, bit_count[4];
+ reg baud_count[4]=0, rxreadyr=0;
+
+ proc_name rx();
+
+ {
+   if(rxreadyr) rxready();
+   rxdf := rxd; rxdi := rxdf;
+ }
+
+ func baud {
+   if(~rx) rx();
+   baud_count := baud_count + 0x1;
+   }
+
+ func port_read {
+   data = rxd1;
+   if(rxreadyr) rxreadyr := 0b0;
+   }
+ 
+ proc rx {
+  state_name idle, databit, stop;
+  first_state idle;
+
+  state idle if(~rxdi) 
+   {
+     baud_cmp := baud_count ^ 0x8;
+     bit_count := 0x0;
+     goto databit;
+     finish;
+   }
+
+  state databit if(baud&(baud_count == baud_cmp))
+   {
+     rxd0 := {rxdi, rxd0[7:1]};
+     bit_count := bit_count + 0x1;
+     if(bit_count[3]) {
+       goto stop;
+     finish;
+     }
+   }
+
+  state stop if(baud&(baud_count == baud_cmp)) {
+   rxd1 := rxd0;
+   rxreadyr := 0b1;
+   goto idle;
+   finish;
+   }
+ }
+}

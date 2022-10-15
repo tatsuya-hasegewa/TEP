@@ -1,0 +1,6 @@
+ADDRESS_SPACE ram4k RAMB16 [0x000:0xfff]
+ BUS_BLOCK
+ board/mainmem/rame/Mram_ram [15:8];
+ board/mainmem/ramo/Mram_ram [7:0];
+ END_BUS_BLOCK;
+END_ADDRESS_SPACE;

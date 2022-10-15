@@ -1,0 +1,227 @@
+#include "clkdep.h"
+
+/*
+ Periferals and CPU declarations.
+*/
+
+declare serial_in {
+ input rxd;
+ output data[8];
+ func_in port_read;
+ func_out rxready;
+ func_in baud;
+}
+
+declare serial_out {
+ output txd;
+ input data[8];
+ func_out txbusy;
+ func_in baud;
+ func_in port_write(data);
+}
+
+declare serial_clkfix {
+ func_out baud;
+}
+
+declare tep {
+	input	 datai[16] ;
+	output	 datao[16] ;
+	output	 adrs[16] ;
+	func_out memory_read;
+	func_out memory_write;
+	func_out ube,lbe;
+	func_in  memory_ack;
+	func_in	 int_signal;
+	func_in	 start;
+	func_out wb;
+	func_out hlt;
+}
+
+declare ram4k {
+	input	datai[16];
+	input	adrs[12];
+	output	datao[16];
+	func_in ube(),lbe();
+	func_out memory_ack();
+	func_in memory_read (adrs);
+	func_in memory_write (adrs,datai);
+}
+
+/*
+ 4kB RAM
+*/
+
+declare ram2k {
+	input	datai[8];
+	input	adrs[11];
+	output	datao[8];
+	func_in rd (adrs);
+	func_in wt (adrs,datai);
+}
+
+
+module ram2k {
+	reg	dor[8];
+	mem	ram[2048][8];
+
+	dor := ram[adrs];
+
+	func wt ram[adrs] := datai;
+	func rd datao = dor;
+}
+
+
+module ram4k {
+	reg	dore[8],doro[8];
+	reg  in_read=0;
+	func_self we,wo,rm;
+	ram2k rame, ramo;
+
+	{
+		datao = {ramo.datao, rame.datao};
+	}
+
+	func we rame.wt(adrs[11:1], datai[7:0]);
+	func wo ramo.wt(adrs[11:1], datai[15:8]);
+	func rm {
+		rame.rd(adrs[11:1]);
+		ramo.rd(adrs[11:1]);
+		}
+		
+
+	func memory_write {
+		memory_ack();
+		any {
+		ube: wo();
+		lbe:we();
+		}
+	}
+
+	func memory_read  any {
+		~in_read: {rm(); in_read :=0b1; }
+		 in_read: {rm(); memory_ack(); in_read := 0b0;}
+		}
+}
+
+/*
+ System module
+*/
+declare sys {
+ input  btn[3], RXD, PS2D, PS2C;
+ output TXD, VGA_R, VGA_G, VGA_B, VGA_H, VGA_V;
+ output led[8];
+ output sseg[8], an[4];
+ input  sw[8];
+}
+
+module sys {
+
+ tep  	cpu;
+ ram4k	mainmem;
+ serial_clkfix baudclk;
+ serial_in  serrx;
+ serial_out sertx;
+
+ reg interval[16]=0, run=0;
+ reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
+ 
+
+ {
+
+   if(~run & (&interval[15:0])) {cpu.start(); run := 0b1; }
+
+   serrx.rxd = RXD;
+   TXD = sertx.txd;
+
+   VGA_R = 0b0;
+   VGA_G = 0b0;
+   VGA_B = 0b0;
+   VGA_H = 0b1;
+   VGA_V = 0b1;
+
+   led = ledout;
+   interval := interval + 0x0001;
+   any {
+     interval[15:14] == 0b00: {anr := 0x1; ssegr := seg0; }
+     interval[15:14] == 0b01: {anr := 0x2; ssegr := seg1; }
+     interval[15:14] == 0b10: {anr := 0x4; ssegr := seg2; }
+     interval[15:14] == 0b11: {anr := 0x8; ssegr := seg3; }
+     }
+   sseg = ~ssegr; an = ~anr;
+   }
+
+ func baudclk.baud {
+   serrx.baud();
+   sertx.baud();
+   }
+ 
+ func cpu.memory_write any {
+	cpu.adrs[15:12] == 0x0: {
+		mainmem.memory_write(cpu.adrs[11:0],cpu.datao);
+		if(cpu.ube) mainmem.ube();
+		if(cpu.lbe) mainmem.lbe();
+		if(mainmem.memory_ack) cpu.memory_ack();
+		}
+	cpu.adrs == 0xe000: /* display data */
+	        {
+		   sertx.port_write(cpu.datao[7:0]);
+		   cpu.memory_ack();
+		}
+	cpu.adrs == 0xe002: /* led data */
+	        {
+		   ledout := cpu.datao[7:0];
+		   cpu.memory_ack();
+		}
+	cpu.adrs == 0xe008: /* led data */
+	        {
+		   seg0 := cpu.datao[7:0];
+		   cpu.memory_ack();
+		}
+	cpu.adrs == 0xe009: /* led data */
+	        {
+		   seg1 := cpu.datao[15:8];
+		   cpu.memory_ack();
+		}
+	cpu.adrs == 0xe00a: /* led data */
+	        {
+		   seg2 := cpu.datao[7:0];
+		   cpu.memory_ack();
+		}
+	cpu.adrs == 0xe00b: /* led data */
+	        {
+		   seg3 := cpu.datao[15:8];
+		   cpu.memory_ack();
+		}
+	}
+ 
+ func cpu.memory_read any {
+	cpu.adrs == 0xe000: /* keyboard data */
+	        {
+		   cpu.datai = {0x00, serrx.port_read().data};
+		   cpu.memory_ack();
+		}
+	cpu.adrs == 0xe001: {/* keyboard, display status */
+		   cpu.datai = {serrx.rxready, sertx.txbusy,
+		               0b000000, 0x00};
+		   cpu.memory_ack();
+		   }
+	cpu.adrs == 0xe002: /* sw data */
+	        {
+		   cpu.datai = {0x00, sw};
+		   cpu.memory_ack();
+		}
+	cpu.adrs[15:12] == 0x0: {
+		ledout := cpu.adrs[7:0];
+		cpu.datai = mainmem.memory_read(cpu.adrs[11:0]).datao;
+		if(cpu.ube) mainmem.ube();
+		if(cpu.lbe) mainmem.lbe();
+		if(mainmem.memory_ack) cpu.memory_ack();
+		}
+ 
+	}
+}
+
+#include "serial_clkfix.nsl"
+#include "serial_in.nsl"
+#include "serial_out.nsl"

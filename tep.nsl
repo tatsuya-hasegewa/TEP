@@ -1,0 +1,471 @@
+/****************************************************************************
+ Tokai Embedded Processor 16  (TEP16)
+****************************************************************************/
+
+#define Itype	opreg[15] == 0b0
+#define Rtype	opreg[15:14] == 0b10
+#define RStype	opreg[15:14] == 0b11
+
+/* I type */
+#define CNST	opreg[14:8] == 0b0000000
+#define LD1	opreg[14:8] == 0b0000001
+#define LD2	opreg[14:8] == 0b0000010
+#define ST1	opreg[14:8] == 0b0000011
+#define ST2	opreg[14:8] == 0b0000100
+#define JUMP	opreg[14:8] == 0b0000101
+#define CALL	opreg[14:8] == 0b0000110
+#define JEQ	opreg[14:8] == 0b0000111
+#define JGEI	opreg[14:8] == 0b0001000
+#define JGEU	opreg[14:8] == 0b0001001
+#define JGTI	opreg[14:8] == 0b0001010
+#define JGTU	opreg[14:8] == 0b0001011
+#define JLEI	opreg[14:8] == 0b0001100
+#define JLEU	opreg[14:8] == 0b0001101
+#define JLTI	opreg[14:8] == 0b0001110
+#define JLTU	opreg[14:8] == 0b0001111
+#define JNE	opreg[14:8] == 0b0010000
+
+/* R type */
+#define MUL         opreg[13:8] == 0b000000		
+#define CVI2        opreg[13:8] == 0b000001		
+#define ADD         opreg[13:8] == 0b000010		
+#define SUB         opreg[13:8] == 0b000011
+#define NEG         opreg[13:8] == 0b000100
+#define BAND        opreg[13:8] == 0b000101
+#define BOR         opreg[13:8] == 0b000110
+#define BXOR        opreg[13:8] == 0b000111
+#define BCOM        opreg[13:8] == 0b001000	
+
+#define DINT        opreg[13:8] == 0b101001		
+#define EINT        opreg[13:8] == 0b101010		
+#define RINT        opreg[13:8] == 0b101011		
+
+/* RS type */
+#define LSHL		opreg[13:12] == 0b00		
+#define RSHA		opreg[13:12] == 0b01
+#define RSHL		opreg[13:12] == 0b10
+#define HLT		opreg[13:12] == 0b11		
+
+#define dR1		opreg[3:0]
+#define dR2		opreg[7:4]
+#define dRSI		opreg[11:8]	//RSのI
+
+#define BYTESZ 0b0	//メモリで使用
+#define WORDSZ 0b1	//メモリで使用
+
+#define int_a 0x00b6	//割り込み先番地(固定番地)30に仮決定
+#define start_pc 0x0000		//スタートPC
+
+#define int_f interrupt_f
+
+declare tep {
+	input	 datai[16] ;
+	output	 datao[16] ;
+	output	 adrs[16] ;
+	func_out memory_write(adrs,datao);
+	func_out memory_read(adrs);
+	func_out ube, lbe;
+	func_in  memory_ack;
+	func_in	 int_signal;		//割り込み信号
+	func_in	 start;
+	func_out wb;
+	func_out hlt;
+}
+
+declare inc16 {
+	input		in[16] ;
+	output		out[16] ;
+	func_in do(in) ;
+}
+
+declare cla16 {
+	input		cin, in1[16], in2[16] ;
+	output		out[16], co, of ;
+	func_in do(cin,in1,in2) ;
+}
+
+declare reg16 {
+	input regin[16];
+	input  portareg[4], portbreg[4], wtreg[4];
+	output porta[16], portb[16];
+	func_in wt(wtreg, regin);
+	func_in ra(portareg);
+	func_in rb(portbreg);
+	}
+
+declare alu16 {
+	input a[16],b[16];
+	output out[16], co, of, z;
+
+
+	func_in do_add(a,b);
+	func_in do_and(a,b);
+	func_in do_bcom(b);
+	func_in do_cvi(b);
+	func_in do_bor(a,b);
+	func_in do_bxor(a,b);
+	func_in do_sub(a,b);
+	func_in do_neg(b);
+	func_in do_lshl(b,a);
+	func_in do_rshl(b,a);
+	func_in do_rsha(b,a);
+	func_in do_mul(a,b);
+}
+
+module tep {
+
+	reg	 pc[16]=0, ipc[16]=0;
+
+	reg	 interrupt_a=0,interrupt_b=0;	//interruptの状態確認用レジスタ
+	reg	 interrupt_f=0;		//interrupt_fは割り込みフラグ(初期状態でOFF)
+	inc16	 inc ;
+	alu16	 alu;
+	reg16    rf;
+
+	reg 	 opreg[16], mar[16], regnum[4],  size, I[16];
+	wire 	 mdata[16], nxpc[16], ex_result[16], A[16], B[16];
+
+
+	proc_name ifetch (pc) ;
+	proc_name exec (opreg) ;
+	proc_name exec2 (I) ;
+	proc_name tstore(mar, regnum, size, pc);
+	proc_name tload(mar, regnum, size, pc);
+
+	{
+		interrupt_a := int_signal;//割り込みレジスタaは割り込み信号後に変化する。
+		interrupt_b := interrupt_a;//割り込みレジスタbは割り込みレジスタa後に変化する。(割り込み信号入力後)
+	}
+
+	func start ifetch(start_pc);		//スタートアップ開始
+	proc ifetch {
+		any{
+		(int_f & interrupt_b): {	//割り込み開始
+			ipc :=pc;
+			int_f := 0b0 ;	//割り込み開始後の割り込みを禁止
+			wb(); ifetch(int_a);	//割り込み先の番地に移動
+			}
+		else: {	//通常動作
+			nxpc = {inc.do({0b0, pc[15:1]}).out[14:0], 0b0};
+			memory_read(pc);	//命令読み出し
+			if(memory_ack) {
+				exec(datai);
+				pc := nxpc;
+				}
+			}
+		}
+	}
+
+	proc exec {	//Rタイプ、RSタイプ実行、Iタイプは次のpcに飛ぶ
+		{
+			any {
+			Itype: {
+				memory_read(pc);	//命令読み出し
+				if(memory_ack) {
+					exec2(datai);
+					}
+				}
+			Rtype: any{
+				RINT: {
+					int_f := 0b0;
+					wb();
+					ifetch(ipc);
+				}else: {
+					A = rf.ra(dR1).porta;
+					B = rf.rb(dR2).portb;
+					wb(); ifetch(pc);
+					any{
+					ADD:  rf.wt(dR1, alu.do_add(A,B).out);
+					MUL:  rf.wt(dR1, alu.do_mul(A,B).out);
+					CVI2: rf.wt(dR1, alu.do_cvi(B).out);
+					SUB:  rf.wt(dR1, alu.do_sub(A,B).out);
+					NEG:  rf.wt(dR1, alu.do_neg(B).out);
+					BAND: rf.wt(dR1, alu.do_and(A,B).out);
+					BOR:  rf.wt(dR1, alu.do_bor(A,B).out);
+					BXOR: rf.wt(dR1, alu.do_bxor(A,B).out);
+					BCOM: rf.wt(dR1, alu.do_bcom(B).out);
+					DINT:int_f := 0b0;
+					EINT:int_f := 0b1;
+					}
+				}
+			} //Rtype 終了
+			RStype:{
+				B = rf.rb(dR2).portb;
+				any {
+				HLT: finish;
+				else: ifetch(pc); 
+				}
+				wb();
+				any {
+				LSHL: rf.wt(dR1,alu.do_lshl(B,{0x000,dRSI}).out);
+				RSHA: rf.wt(dR1,alu.do_rsha(B,{0x000,dRSI}).out);
+				RSHL: rf.wt(dR1,alu.do_rshl(B,{0x000,dRSI}).out);
+				HLT: hlt();
+				}
+			}	//RSタイプ終了
+		}
+	}	//nxpcの並列処理部終了
+	}	//proc execの終了
+
+	proc exec2 {		//Iタイプ実行用ステージ
+		{
+		nxpc = {inc.do({0b0, pc[15:1]}).out[14:0], 0b0};
+		A = rf.ra(dR1).porta;
+		B = rf.rb(dR2).portb;
+		any {
+		Itype: 
+			{
+			wb();
+			any{
+			CNST:{
+				ifetch(nxpc);
+				rf.wt(dR1,alu.do_add(I,B).out);
+			}
+			//	 task tload(mar, regnum, size, pc);
+			LD1: tload(alu.do_add(I,B).out, dR1, BYTESZ, nxpc);
+			LD2: tload(alu.do_add(I,B).out, dR1, WORDSZ, nxpc);
+			ST1: tstore(alu.do_add(I,B).out, dR1, BYTESZ, nxpc);
+			ST2: tstore(alu.do_add(I,B).out, dR1, WORDSZ, nxpc);
+			JUMP: ifetch(alu.do_add(I,B).out); 
+			CALL: { 
+				ifetch(alu.do_add(I,B).out);
+				rf.wt(dR1,nxpc);
+			}
+			JEQ: {
+				alu.do_sub(A,B);
+				any{
+				alu.z : ifetch(I);
+				else:   ifetch(nxpc);
+				}
+			}
+
+			JGEI: {
+				alu.do_sub(A,B);
+				any{
+				~(alu.of ^ alu.out[15]) : ifetch(I);
+				 else: ifetch(nxpc);
+				}
+			}
+			JGEU:{
+				alu.do_sub(A,B);
+				any{//A]=B
+				alu.co :ifetch(I);
+				else:ifetch(nxpc);
+				}
+			}
+			JGTI:	{
+				alu.do_sub(A,B);
+				any{
+				 ~alu.z & ~(alu.of ^ alu.out[15]) : ifetch(I);
+				 else: ifetch(nxpc);
+				 }
+			}
+			JGTU:{
+				alu.do_sub(A,B);
+				any {
+				alu.co&~alu.z:ifetch(I);
+				else:ifetch(nxpc);
+				 }
+			}
+			JLEI:	{
+				alu.do_sub(A,B);
+				any{
+				~alu.z & ~(alu.of ^ alu.out[15]) : ifetch(nxpc);
+				else: ifetch(I);
+				}
+			}
+			JLEU:{
+				alu.do_sub(A,B);
+				any{
+				alu.co&~alu.z:ifetch(nxpc);
+				else:ifetch(I);
+				}
+			}
+			JLTI:	{
+				alu.do_sub(A,B);
+				any{
+				~(alu.of ^ alu.out[15]): ifetch(nxpc);
+				else: ifetch(I);
+				}
+			}
+			JLTU:{
+				alu.do_sub(A,B);
+				any{//A]=B
+				alu.co :ifetch(nxpc);
+				else: ifetch(I);
+				}
+			}
+			JNE:{
+				alu.do_sub(A,B);
+				any{
+				alu.z: ifetch(nxpc);
+				else: ifetch(I);
+				}
+			}
+			}
+		}
+		}
+		}
+	}
+	proc tstore {
+		mdata = rf.ra(regnum).porta;
+		any {
+		mar[0]: {
+			ube();
+			memory_write(mar, {mdata[7:0], 0x00});
+			}
+		~mar[0]: {
+			any {
+			size==WORDSZ: {
+				ube();
+				lbe();
+				}
+			else: lbe();
+			}
+			memory_write(mar, mdata);
+			}
+		}
+		if(memory_ack) {ifetch(pc); wb();}
+	}
+	proc tload {
+		memory_read(mar);
+		any {
+		mar[0] & (size==BYTESZ): {
+			ube();
+			mdata = {0x00, datai[15:8]};
+			}
+		~mar[0] & (size==BYTESZ): {
+			lbe();
+			mdata = {0x00, datai[7:0]};
+			}
+		size==WORDSZ: {
+			mdata=datai;
+			ube();
+			lbe();
+			}
+		}
+		if(memory_ack) {
+			rf.wt(regnum,mdata);
+			ifetch(pc); wb();
+			}
+	}
+}
+
+module inc16 {
+  func do out = in + 0x0001;
+}
+
+module cla16 {
+	wire		tmp[17], t1[15],t2[15], to[16];
+	func do {
+		t1 = in1[14:0];
+		t2 = in2[14:0];
+		to = {0b0, t1} + {0b0, t2} + {15#0b0, cin};
+		tmp = {({0b0, in1[15]} + {0b0, in2[15]} + {0b0, to[15]}), to[14:0]};
+		out = tmp[15:0];
+		co = tmp[16];
+		of = tmp[16]^to[15];
+		}
+}
+#ifdef REGFILESYN
+module reg16 {
+	
+	reg R01[16],R02[16],R03[16],R04[16],R05[16],R06[16],R07[16];
+	reg R08[16],R09[16],R10[16],R11[16],R12[16],R13[16],R14[16],R15[16];
+	
+	func wt any {
+		wtreg == 0x1: R01 := regin;
+		wtreg == 0x2: R02 := regin;
+		wtreg == 0x3: R03 := regin;
+		wtreg == 0x4: R04 := regin;
+		wtreg == 0x5: R05 := regin;
+		wtreg == 0x6: R06 := regin;
+		wtreg == 0x7: R07 := regin;
+		wtreg == 0x8: R08 := regin;
+		wtreg == 0x9: R09 := regin;
+		wtreg == 0xa: R10 := regin;
+		wtreg == 0xb: R11 := regin;
+		wtreg == 0xc: R12 := regin;
+		wtreg == 0xd: R13 := regin;
+		wtreg == 0xe: R14 := regin;
+		wtreg == 0xf: R15 := regin;
+	}
+	func ra any {
+		portareg == 0x0: porta = 0x0000;
+		portareg == 0x1: porta = R01;
+		portareg == 0x2: porta = R02;
+		portareg == 0x3: porta = R03;
+		portareg == 0x4: porta = R04;
+		portareg == 0x5: porta = R05;
+		portareg == 0x6: porta = R06;
+		portareg == 0x7: porta = R07;
+		portareg == 0x8: porta = R08;
+		portareg == 0x9: porta = R09;
+		portareg == 0xa: porta = R10;
+		portareg == 0xb: porta = R11;
+		portareg == 0xc: porta = R12;
+		portareg == 0xd: porta = R13;
+		portareg == 0xe: porta = R14;
+		portareg == 0xf: porta = R15;
+	}
+	func rb any {
+		portbreg == 0x0: portb = 0x0000;
+		portbreg == 0x1: portb = R01;
+		portbreg == 0x2: portb = R02;
+		portbreg == 0x3: portb = R03;
+		portbreg == 0x4: portb = R04;
+		portbreg == 0x5: portb = R05;
+		portbreg == 0x6: portb = R06;
+		portbreg == 0x7: portb = R07;
+		portbreg == 0x8: portb = R08;
+		portbreg == 0x9: portb = R09;
+		portbreg == 0xa: portb = R10;
+		portbreg == 0xb: portb = R11;
+		portbreg == 0xc: portb = R12;
+		portbreg == 0xd: portb = R13;
+		portbreg == 0xe: portb = R14;
+		portbreg == 0xf: portb = R15;
+	}
+
+}
+#else
+
+module reg16 {
+	mem r[16][16];
+	
+	func wt r[wtreg] := regin;
+	func ra any {
+		portareg == 0x0: porta = 0x0000;
+		else: porta = r[portareg];
+	}
+	func rb any {
+		portbreg == 0x0: portb = 0x0000;
+		else: portb = r[portbreg];
+	}
+
+}
+
+#endif
+
+module alu16 {
+	wire a32[32];
+	cla16	cla;
+
+	z = (out == 0x0000);
+	
+	func do_add	    {out = cla.do(0b0, a, b).out; co=cla.co; of=cla.of;}
+	func do_and	    out = a & b;
+	func do_bcom    out = ~b;
+	func do_cvi     out = 16#b[7:0];
+	func do_sub     {out = cla.do(0b1, a, ~b).out; co=cla.co; of=cla.of;}
+	func do_neg     out = -b;
+	func do_bor     out = a | b;
+	func do_bxor    out = a ^ b;
+	func do_lshl    out = b << a;
+	func do_rshl    out = b >> a;
+	func do_rsha    {
+		a32=32#b;
+		out=(a32>>a)[15:0];	
+	}
+	func do_mul     out = a[7:0] * b[7:0];
+}
