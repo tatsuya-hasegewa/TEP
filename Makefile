@@ -22,12 +22,12 @@ TESTBENCH=testBench
 all:  $(SYSEXE)
 
 sim: tep.v sys.v sysmain.v $(TARGET).mem
+	cp $(TARGET).mem $(SYSMEM)
 	sed -i -e "s/#include \"V.*\.h\"/#include \"V$(SIMTOP)\.h\"/g" $(TESTBENCH).cpp
 	sed -i -e"s/V.*\\\*top;/V$(SIMTOP) *top;/g" $(TESTBENCH).cpp
 	sed -i -e"s/top = new V.*;/top = new V$(SIMTOP);/g" $(TESTBENCH).cpp
 	verilator -Wno-STMTDLY -Wno-TIMESCALEMOD -Wno-REALCVT -Wno-INFINITELOOP -Wno-IMPLICIT -Wno-WIDTH -Wno-BLKANDNBLK --default-language 1364-2005 -cc --trace --trace-underscore *.v --top-module $(SIMTOP) -exe $(TESTBENCH).cpp -O3
 	make -C ./obj_dir/ -f V$(SIMTOP).mk
-	cp $(TARGET).mem $(SYSMEM)
 	./obj_dir/V$(SIMTOP)
 
 $(TARGET).s:	$(TARGET).c

@@ -68,6 +68,7 @@ public:
         }
         /* negate reset signal */
         {
+            top->p_reset = 0;
             tick();
             eval();
             dump();

@@ -2,6 +2,7 @@ module main(p_reset,m_clock);
 parameter STEP=10;
 integer i,j,vcd,conindex;
 input p_reset, m_clock;
+wire p_reset, m_clock;
 reg int_signal;	//Š„‚è‚İƒŒƒWƒXƒ^
 reg [7:0] mem [0:4091];
 reg [7:0] conin [0:255];
