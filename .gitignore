@@ -9,3 +9,5 @@ tep.vcd
 sys.v
 tep.v
 top.v
+Altera/synth
+*.mif
