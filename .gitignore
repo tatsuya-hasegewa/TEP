@@ -1,0 +1,8 @@
+obj_dir
+*.mem
+*.s
+tepasm
+.vscode
+tep.vcd
+sys.v
+tep.v

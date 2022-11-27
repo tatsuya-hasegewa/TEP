@@ -1,7 +1,8 @@
-module main;
+module main(p_reset,m_clock);
 parameter STEP=10;
 integer i,j,vcd,conindex;
-reg p_reset, m_clock, memory_ack,int_signal;	//割り込みレジスタ
+input p_reset, m_clock;
+reg int_signal;	//割り込みレジスタ
 reg [7:0] mem [0:4091];
 reg [7:0] conin [0:255];
 reg [15:0] datai;
@@ -31,7 +32,7 @@ assign wb = sys.cpu.wb;
 assign hlt = sys.cpu.hlt;
 
 
-always #(STEP/2) m_clock=~m_clock;
+//always #(STEP/2) m_clock=~m_clock;
 //ここで割り込みのON,OFFを設定する。
 always #(STEP) int_signal=1;			//割り込みレジスタの値
 
@@ -174,10 +175,10 @@ initial begin		//初期化
    $dumpfile("tep.vcd");
    $dumpvars(0,sys);
    end
- m_clock=0;
- p_reset=1;
+ //m_clock=0;
+ //p_reset=1;
  int_signal=0;		//割り込みレジスタ
- #(STEP) p_reset=0;
+ //#(STEP) p_reset=0;
  sys.interval = 'hfffc;
 
  #(60000*STEP+(STEP/2)) $finish;
