@@ -1,6 +1,6 @@
 SHELL=bash
 FPGABOARD=top
-FPGADIR=Xilinx
+FPGADIR=Altera
 SYNTHEOPT=-O2 -DSYNTHE
 VCD=+vcd=1
 P=
@@ -26,33 +26,33 @@ sim: tep.v sys.v sysmain.v $(TARGET).mem
 	sed -i -e "s/#include \"V.*\.h\"/#include \"V$(SIMTOP)\.h\"/g" $(TESTBENCH).cpp
 	sed -i -e"s/V.*\\\*top;/V$(SIMTOP) *top;/g" $(TESTBENCH).cpp
 	sed -i -e"s/top = new V.*;/top = new V$(SIMTOP);/g" $(TESTBENCH).cpp
-	verilator -Wno-STMTDLY -Wno-TIMESCALEMOD -Wno-REALCVT -Wno-INFINITELOOP -Wno-IMPLICIT -Wno-WIDTH -Wno-BLKANDNBLK --default-language 1364-2005 -cc --trace --trace-underscore *.v --top-module $(SIMTOP) -exe $(TESTBENCH).cpp -O3
+	verilator -Wno-STMTDLY -Wno-TIMESCALEMOD -Wno-REALCVT -Wno-INFINITELOOP -Wno-IMPLICIT -Wno-WIDTH -Wno-BLKANDNBLK --default-language 1364-2005 -cc --trace --trace-underscore sysmain.v tep.v sys.v --top-module $(SIMTOP) -exe $(TESTBENCH).cpp -O3
 	make -C ./obj_dir/ -f V$(SIMTOP).mk
 	./obj_dir/V$(SIMTOP)
 
 $(TARGET).s:	$(TARGET).c
 	lcc -S $(TARGET).c
 
-$(TARGET).mem:	tepasm/tepasm.exe $(TARGET).s
+$(TARGET).mem:	tepasm/tepasm $(TARGET).s
 	sh asm.sh  $(TARGET).s | tee $(TARGET).mem
 
-tepasm/tepasm.exe:
+tepasm/tepasm:
 	( cd tepasm; make all )
 
 $(SYSEXE): tep.v sys.v sysmain.v
 	$(VERILOG) -o $(SYSEXE) sys.v tep.v sysmain.v
 
 sys.v:	sys.nsl
-	$(NSL2VLEXE) sys.nsl -O
+	$(NSL2VLEXE) sys.nsl -O2
 
 tep.v:	tep.nsl
-	$(NSL2VLEXE) tep.nsl -O
+	$(NSL2VLEXE) tep.nsl -O2
 
-synthe:	$(SRC) $(FPGABOARD).nsl $(TARGET).mem
+synthe:	$(SRC) $(FPGABOARD).nsl $(TARGET).mem tep.v
 	$(NSL2VLEXE) $(FPGABOARD).nsl $(SYNTHEOPT)
-	mv $(FPGABOARD).v $(FPGADIR)
-	cp $(TARGET).mem $(FPGADIR)
-	
+	mv $(FPGABOARD).v tep.v $(FPGADIR)
+	./memtohex.py $(TARGET).mem
+	mv $(TARGET).hex $(FPGADIR)
 
 distclean:
 	make clean
@@ -60,4 +60,5 @@ distclean:
 
 clean:
 	-rm $(CLEAN) 2> /dev/null
+	-rm -rf obj_dir
 	-(cd tepasm; rm $(ASMCLEANS))

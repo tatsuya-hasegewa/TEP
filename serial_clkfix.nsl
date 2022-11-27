@@ -1,11 +1,11 @@
 module serial_clkfix {
 
- reg cnt[8]=0;
- wire    cnttmp[8];   
+ reg cnt[12]=0;
+ wire    cnttmp[2];   
 
  {
      cnttmp = cnt - 0x01;
-     if(cnttmp == 0xff) {baud(); cnt := CLKDIV;}
+     if(cnttmp == 0xfff) {baud(); cnt := CLKDIV;}
        else      cnt := cnttmp;
      }
 }

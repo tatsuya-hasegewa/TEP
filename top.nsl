@@ -37,11 +37,11 @@ module top {
  sys  	board;
  
 
- BUFG buff;
- DCM dcm_2(CLKDV_DIVIDE=2, CLK_FEEDBACK="1X");
+ //BUFG buff;
+ //DCM dcm_2(CLKDV_DIVIDE=2, CLK_FEEDBACK="1X");
 
  {
-
+   /*
    dcm_2.RST = p_reset;
    dcm_2.CLKIN = m_clock;
    dcm_2.CLKFB = dcm_2.CLK0;
@@ -49,8 +49,9 @@ module top {
    dcm_2.PSCLK = 0b0;
    dcm_2.PSINCDEC = 0b0;
    buff.I = dcm_2.CLKDV;
+   */
 
-   board.m_clock = buff.O;
+   board.m_clock = m_clock;
    board.p_reset = p_reset;
    
    board.RXD = RXD;
