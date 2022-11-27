@@ -1,8 +1,11 @@
 obj_dir
 *.mem
 *.s
-tepasm
+tepasm/lex.yy*
+tepasm/tepasm.tab*
+tepasm/tepasm
 .vscode
 tep.vcd
 sys.v
 tep.v
+top.v

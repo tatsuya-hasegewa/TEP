@@ -15,12 +15,12 @@ CLEANS = $(TEPASM).tab.o lex.yy.o $(TEPASM).tab.c lex.yy.c $(TEPASM).tab.h $(TEP
 OBJS = $(TEPASM).tab.o lex.yy.o
 SRCS = $(TEPASM).y $(TEPASM).l $(TEPASM).h
 
-all: $(TEPASM).exe
-install:	$(TEPASM).exe
+all: $(TEPASM)
+install:	$(TEPASM)
 	cp $(TEPASM)$E $(INSTALLDIR)
 
-$(TEPASM).exe: $(OBJS)
-	 $(CC) $(CFLAGS) $(OBJS) -o $(TEPASM).exe
+$(TEPASM): $(OBJS)
+	 $(CC) $(CFLAGS) $(OBJS) -o $(TEPASM)
 
 $(TEPASM).tab.o: $(TEPASM).tab.c $(TEPASM).y
 	$(CC) $(CFLAGS) -c $(TEPASM).tab.c
