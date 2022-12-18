@@ -1,0 +1,43 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Sun Dec 18 14:07:53 2022
+[*]
+[dumpfile] "\\wsl$\Ubuntu-20.04\home\nao\lab\TEP\tep.vcd"
+[dumpfile_mtime] "Sun Dec 18 14:06:47 2022"
+[dumpfile_size] 165853501
+[savefile] "\\wsl$\Ubuntu-20.04\home\nao\lab\TEP\sim.gtkw"
+[timestart] 0
+[size] 1000 608
+[pos] 780 -38
+*-19.000000 240000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.main.
+[treeopen] TOP.main.sim_serrx.
+[treeopen] TOP.main.sys.sertx.
+[sst_width] 197
+[signals_width] 150
+[sst_expanded] 1
+[sst_vpaned_height] 156
+@28
+TOP.main.sys.TXD
+TOP.main.sys.RXD
+TOP.main.sys.sertx.txbusy
+TOP.main.sys.sertx.tx
+@820
+TOP.main.sys.sertx.txd0[7:0]
+@28
+TOP.main.sys.sertx.txdr
+@22
+TOP.main.sys.cpu.pc[15:0]
+@28
+TOP.main.sys.sertx.txd1[7:0]
+TOP.main.sim_serrx.rxd
+@821
+TOP.main.sim_serrx.data[7:0]
+@28
+TOP.main.sim_serrx.done
+TOP.main.sys.sertx.baudclk.sync
+TOP.main.sys.sertx.baudclk.baud
+TOP.main.sys.sertx.baud_count[2:0]
+[pattern_trace] 1
+[pattern_trace] 0
