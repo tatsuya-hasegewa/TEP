@@ -42,7 +42,7 @@ tepasm/tepasm:
 $(SYSEXE): tep.v sys.v sysmain.v
 	$(VERILOG) -o $(SYSEXE) sys.v tep.v sysmain.v
 
-sys.v:	sys.nsl
+sys.v: $(SRC) sys.nsl
 	$(NSL2VLEXE) sys.nsl -O2
 
 tep.v:	tep.nsl
@@ -51,8 +51,8 @@ tep.v:	tep.nsl
 synthe:	$(SRC) $(FPGABOARD).nsl $(TARGET).mem tep.v
 	$(NSL2VLEXE) $(FPGABOARD).nsl $(SYNTHEOPT)
 	mv $(FPGABOARD).v tep.v $(FPGADIR)
-	./memtohex.py $(TARGET).mem
-	mv $(TARGET).hex $(FPGADIR)
+	./memtomif.py $(TARGET).mem
+	mv $(TARGET).mif $(FPGADIR)/mainmem.mif
 
 distclean:
 	make clean

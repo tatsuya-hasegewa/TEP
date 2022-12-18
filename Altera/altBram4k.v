@@ -94,7 +94,7 @@ module altera_bram4k (
 		altsyncram_component.intended_device_family = "Cyclone V",
 		altsyncram_component.lpm_hint = "ENABLE_RUNTIME_MOD=NO",
 		altsyncram_component.lpm_type = "altsyncram",
-        altsyncram_component.init_file = "mon.mif",
+        altsyncram_component.init_file = "mainmem.mif",
 		altsyncram_component.numwords_a = 2048,
 		altsyncram_component.operation_mode = "SINGLE_PORT",
 		altsyncram_component.outdata_aclr_a = "NONE",
