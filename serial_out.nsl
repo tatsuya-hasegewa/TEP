@@ -1,41 +1,26 @@
 module serial_out {
 
  reg txd0[8], txd1[8];
- reg baud_count[4]=0, bit_count[4]=0;
+ reg baud_count[3]=0, bit_count[4]=0;
  reg txdr=1;
-
- reg txbusyr=0;
-
+ 
  proc_name tx();
- proc_name tw();
+ serial_clkfix baudclk;
 
-  {
-  if(txbusyr) txbusy();
+{
+  if(tx) txbusy();
   txd = txdr;
+}
+   
+ func baudclk.baud{
+   baud_count := baud_count + 1;
  }
-
- func baud baud_count := baud_count + 1;
 
  func port_write  {
    txd0 := data;
-   any {
-     ~tx: tx();
-      tx:  {
-                tw();
-                txbusyr := 1;
-		}
-   }
+   tx();
  }
 
- proc tw {
-  any {
-   ~tx:  {
-             tx();
-             txbusyr := 0;
-             finish;
-           }
-  }
- }
  proc tx {
   state_name setup, startbit, txbit, stopbit;
   first_state setup;
@@ -43,12 +28,12 @@ module serial_out {
     txd1 := txd0;
     bit_count := 0;
     goto startbit;
-    }
-  state startbit if(baud&(baud_count==0xf))  {
+  }
+  state startbit if(baudclk.baud & (baud_count==0x7))  {
     txdr := 0;
     goto txbit;
   }
-  state txbit if(baud&(baud_count==0xf)) any {
+  state txbit if(baudclk.baud & (baud_count==0x7)) any {
    ~bit_count[3]:  {
         txdr := txd1[0];
         txd1 := {0b0, txd1[7:1]};
@@ -59,7 +44,7 @@ module serial_out {
        goto stopbit;
     }
   }
-  state stopbit if(baud&(baud_count==0xf))  {
+  state stopbit if(baudclk.baud & (baud_count==0x7))  {
     goto setup;
     finish;
   }

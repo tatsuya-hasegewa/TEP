@@ -1,11 +1,15 @@
+#include "serial.h"
+
 module serial_clkfix {
 
- reg cnt[12]=0;
- wire    cnttmp[2];   
+  reg cnt[16]=0;
 
- {
-     cnttmp = cnt - 0x01;
-     if(cnttmp == 0xfff) {baud(); cnt := CLKDIV;}
-       else      cnt := cnttmp;
-     }
+  alt{
+    sync: cnt := 0;
+    cnt == BAUD_CNT:{
+      baud();
+      cnt := 0;
+    }
+    else: cnt++;
+  }
 }

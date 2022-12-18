@@ -1,5 +1,3 @@
-#include "clkdep.h"
-
 /*
  Periferals and CPU declarations.
 */
@@ -9,19 +7,14 @@ declare serial_in {
  output data[8];
  func_in port_read;
  func_out rxready;
- func_in baud;
+ func_out done;
 }
 
 declare serial_out {
  output txd;
  input data[8];
  func_out txbusy;
- func_in baud;
  func_in port_write(data);
-}
-
-declare serial_clkfix {
- func_out baud;
 }
 
 declare tep {
@@ -186,7 +179,6 @@ module sys {
  #else
  alt_ram4k	mainmem;
  #endif
- serial_clkfix baudclk;
  serial_in  serrx;
  serial_out sertx;
 
@@ -216,11 +208,6 @@ module sys {
      interval[15:14] == 0b11: {anr := 0x8; ssegr := seg3; }
      }
    sseg = ~ssegr; an = ~anr;
-   }
-
- func baudclk.baud {
-   serrx.baud();
-   sertx.baud();
    }
  
  func cpu.memory_write any {
@@ -265,7 +252,7 @@ module sys {
  func cpu.memory_read any {
 	cpu.adrs == 0xe000: /* keyboard data */
 	        {
-		   cpu.datai = {0x00, serrx.port_read().data};
+		   cpu.datai = {0x00, serrx.data};
 		   cpu.memory_ack();
 		}
 	cpu.adrs == 0xe001: {/* keyboard, display status */
