@@ -4,21 +4,25 @@ import sys
 import os
 
 
-def list(input):
+def listBig16(input):
     array = []
+    cnt = 0
     with open(input, 'r') as f:
         l = f.readlines()
         for i in l:
             a = i.split()
             for j in a:
-                array.append(j)
-        # print(array)
+                if (cnt % 2 == 0):
+                    array.append(j)
+                else:
+                    array.insert(-1, j)
+                cnt += 1
     return array
 
 
 def mifGen(input):
     addr = 0x0
-    array = list(input)  # convert to big endian
+    array = listBig16(input)  # convert to big endian
     cnt = 0
     buf = f'DEPTH=2048;\nWIDTH=16;\nADDRESS_RADIX=HEX;\nDATA_RADIX=HEX;\nCONTENT BEGIN\n\n{0:04x} :'
     for i in array:
@@ -32,7 +36,7 @@ def mifGen(input):
             buf += f'{i}'
         cnt += 1
     buf += ';\nEND;'
-    with open(os.path.splitext(os.path.basename(input))[0] + ".hex", 'w') as f:
+    with open(os.path.splitext(os.path.basename(input))[0] + ".mif", 'w') as f:
         f.write(buf)
 
 
