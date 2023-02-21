@@ -23,7 +23,9 @@ all:  $(SYSEXE)
 
 sim: tep.v sys.v sysmain.v $(TARGET).mem
 	cp $(TARGET).mem $(SYSMEM)
-	sed -i -e "s/#include \"V.*\.h\"/#include \"V$(SIMTOP)\.h\"/g" $(TESTBENCH).cpp
+	./8to16.py $(SYSMEM)
+	sed -i -E -e "s/#include \"V.*___024root\.h\"$$/#include \"V$(SIMTOP)___024root\.h\"/g" $(TESTBENCH).cpp
+	sed -i -E -e "s/#include \"V.*[^024root]\.h\"$$/#include \"V$(SIMTOP)\.h\"/g" $(TESTBENCH).cpp
 	sed -i -e"s/V.*\\\*top;/V$(SIMTOP) *top;/g" $(TESTBENCH).cpp
 	sed -i -e"s/top = new V.*;/top = new V$(SIMTOP);/g" $(TESTBENCH).cpp
 	verilator -Wno-STMTDLY -Wno-TIMESCALEMOD -Wno-REALCVT -Wno-INFINITELOOP -Wno-IMPLICIT -Wno-WIDTH -Wno-BLKANDNBLK --default-language 1364-2005 -cc --trace --trace-underscore sysmain.v tep.v sys.v --top-module $(SIMTOP) -exe $(TESTBENCH).cpp -O3
@@ -53,6 +55,7 @@ synthe:	$(SRC) $(FPGABOARD).nsl $(TARGET).mem tep.v
 	mv $(FPGABOARD).v tep.v $(FPGADIR)
 	./memtomif.py $(TARGET).mem
 	mv $(TARGET).mif $(FPGADIR)/mainmem.mif
+	make -C $(FPGADIR)
 
 distclean:
 	make clean
