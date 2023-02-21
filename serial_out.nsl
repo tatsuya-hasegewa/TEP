@@ -29,11 +29,11 @@ module serial_out {
     bit_count := 0;
     goto startbit;
   }
-  state startbit if(baudclk.baud & (baud_count==0x7))  {
+  state startbit if(baudclk.baud & (baud_count==3'b111))  {
     txdr := 0;
     goto txbit;
   }
-  state txbit if(baudclk.baud & (baud_count==0x7)) any {
+  state txbit if(baudclk.baud & (baud_count==3'b111)) any {
    ~bit_count[3]:  {
         txdr := txd1[0];
         txd1 := {0b0, txd1[7:1]};
@@ -44,7 +44,7 @@ module serial_out {
        goto stopbit;
     }
   }
-  state stopbit if(baudclk.baud & (baud_count==0x7))  {
+  state stopbit if(baudclk.baud & (baud_count==3'b111))  {
     goto setup;
     finish;
   }

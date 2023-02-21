@@ -3,7 +3,7 @@
 */
 module serial_in {
 
- reg rxd0[8], rxd1[8], baud_cmp[4], rxdi, rxdf, bit_count[4];
+ reg rxd0[8], rxd1[8], baud_cmp[3], rxdi, rxdf, bit_count[4];
  reg baud_count[3]=0, rxreadyr=0;
 
  proc_name rx();
@@ -32,7 +32,7 @@ module serial_in {
   state idle if(~rxdi) 
    {
      baudclk.sync();
-     baud_cmp := baud_count ^ 0x4;
+     baud_cmp := baud_count ^ 3'b100;
      bit_count := 0x0;
      rxreadyr := 0b0;
      goto databit;
