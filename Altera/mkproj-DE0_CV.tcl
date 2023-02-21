@@ -159,7 +159,7 @@ set_location_assignment PIN_AB15 -to sw[5]
 set_location_assignment PIN_AA14 -to sw[6]
 set_location_assignment PIN_AA13 -to sw[7]
 set_location_assignment PIN_AB13 -to sw[8]
-set_location_assignment PIN_AB12 -to sw[9]
+set_location_assignment PIN_AB12 -to reset
 
 set_location_assignment PIN_W8 -to DRAM_ADDR[0]
 set_location_assignment PIN_T8 -to DRAM_ADDR[1]
@@ -234,7 +234,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[6]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[7]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to reset
 
 #============================================================
 # KEY
@@ -356,5 +356,9 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_WE_N
 set_location_assignment PIN_K19 -to reserved_gnd
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to reserved_gnd
 set_instance_assignment -name RESERVE_PIN AS_OUTPUT_DRIVING_GROUND -to reserved_gnd
+
+set_global_assignment -name ENABLE_SIGNALTAP OFF
+set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
+set_global_assignment -name SIGNALTAP_FILE stp1.stp
 
 project_close

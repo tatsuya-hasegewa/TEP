@@ -1,6 +1,7 @@
 #include <iostream>
 #include <verilated.h>
 #include "verilated_vcd_c.h"
+#include "Vmain___024root.h"
 #include "Vmain.h"
 
 uint64_t main_time = 0;

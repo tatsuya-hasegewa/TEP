@@ -19,6 +19,7 @@ declare sys interface{
  output led[8];
  output sseg[8], an[4];
  input  sw[8];
+ input  reset;
  }
 
 /*
@@ -30,6 +31,7 @@ declare top {
  output led[8];
  output sseg[8], an[4];
  input  sw[8];
+ input  reset;  //SW10
 }
 
 module top {
@@ -53,6 +55,7 @@ module top {
 
    board.m_clock = m_clock;
    board.p_reset = p_reset;
+   board.reset = reset;
    
    board.RXD = RXD;
    TXD = board.TXD;
