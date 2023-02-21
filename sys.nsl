@@ -51,7 +51,8 @@ declare alt_ram4k {
 	func_in memory_write (adrs,datai);
 }
 
-declare altera_bram4k interface{
+#ifdef SYNTHE declare altera_bram4k interface #else declare altera_bram4k #endif
+{
 	input	  address[11];
 	input	  byteena[2];
 	input	  clock;
@@ -59,6 +60,36 @@ declare altera_bram4k interface{
 	input	  wren;
 	output	  q[16];
 }
+
+#ifndef SYNTHE
+module altera_bram4k {	//bram sim
+    func_self read;
+    func_self write;
+    mem ram[2048][16];
+    wire wdata[16];
+    reg rdata[16];
+    reg byteen[2];
+
+    rdata := ram[address];
+    byteen := byteena;
+    any{
+        byteen == 2'b01:{
+            wdata = {8'b0, data[7:0]};
+            q = {8'b0, rdata[7:0]};
+        }
+        byteen == 2'b10:{
+            wdata = {data[15:8], 8'b0};
+            q = {rdata[15:8], 8'b0};
+        }
+        byteen == 2'b11:{
+            wdata = data;
+            q = rdata;
+        }   
+        wren: ram[address] := wdata;
+    }
+}
+#endif
+
 /*
  4kB RAM
 */
@@ -144,18 +175,14 @@ module alt_ram4k {
 	}		
 
 	func memory_write {
+		write(adrs[11:1], {ube,lbe}, datai);
 		memory_ack();
-		alt {
-			ube: 		write(adrs[11:1], 2'b01, datai);	//lb
-			lbe: 		write(adrs[11:1], 2'b10, datai);	//hb
-			ube && lbe: write(adrs[11:1], 2'b11, datai);	//word
-		}
 	}
 
-	func memory_read  any {
-		~in_read: {read(adrs[11:1]); in_read :=0b1; }
-		 in_read: {read(adrs[11:1]); memory_ack(); in_read := 0b0;}
-		}
+	func memory_read seq{
+		read(adrs[11:1]);
+		memory_ack();
+	}
 }
 
 /*
@@ -168,17 +195,14 @@ declare sys {
  output led[8];
  output sseg[8], an[4];
  input  sw[8];
+ //input reset;
 }
 #endif
 
 module sys {
 
  tep  	cpu;
- #ifndef SYNTHE
- ram4k	mainmem;
- #else
  alt_ram4k	mainmem;
- #endif
  serial_in  serrx;
  serial_out sertx;
 
@@ -188,7 +212,7 @@ module sys {
 
  {
 
-   if(~run & (&interval[15:0])) {cpu.start(); run := 0b1; }
+   if(~run & (&interval[15:0])) {cpu.start(); run := 0b1; }//if(~run && reset) {cpu.start(); run := 1; }
 
    serrx.rxd = RXD;
    TXD = sertx.txd;
