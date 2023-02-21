@@ -54,7 +54,7 @@ begin
 if(wb)
 
  #(STEP)
- if(j != 8)
+/*
   begin
   $write("pc:%x ",sys.cpu.pc);
   case (sys.cpu.opreg[15])
@@ -128,9 +128,8 @@ if(wb)
 	  end
 	endcase
 	//endcase  
-	j=j+1;
   end
-  
+*/
 if(hlt)
   begin 
   $display("\npc:%x HLT   OP :%b %b %b %b\n  R01:%x R02:%x R03:%x R04:%x R05:%x R06:%x R07:%x R08:%x R09:%x R10:%x R11:%x R12:%x R13:%x R14:%x R15:%x I:%x"
@@ -155,12 +154,6 @@ end
 
 initial begin		//初期化
  $readmemh("tep.mem", sys.mainmem.memory.ram);
- 
- for(i=0; i<8; i=i+1)
- begin
-	 $display("%x ",sys.mainmem.memory.ram[i]);
- end
- 
  int_signal=0;		//割り込みレジスタ
  sys.interval = 'hfffc;
 
