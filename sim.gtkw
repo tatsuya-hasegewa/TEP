@@ -1,25 +1,82 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Sun Dec 18 14:07:53 2022
+[*] Tue Feb 21 10:03:35 2023
 [*]
-[dumpfile] "\\wsl$\Ubuntu-20.04\home\nao\lab\TEP\tep.vcd"
-[dumpfile_mtime] "Sun Dec 18 14:06:47 2022"
-[dumpfile_size] 165853501
-[savefile] "\\wsl$\Ubuntu-20.04\home\nao\lab\TEP\sim.gtkw"
-[timestart] 0
-[size] 1000 608
-[pos] 780 -38
-*-19.000000 240000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "\\wsl$\Ubuntu\home\nao\Lab\TEP\tep.vcd"
+[dumpfile_mtime] "Tue Feb 21 09:18:28 2023"
+[dumpfile_size] 94682672
+[savefile] "\\wsl$\Ubuntu\home\nao\Lab\TEP\sim.gtkw"
+[timestart] 131133
+[size] 1000 612
+[pos] -135 -7
+*-4.000000 131139 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.main.
 [treeopen] TOP.main.sim_serrx.
+[treeopen] TOP.main.sys.
+[treeopen] TOP.main.sys.cpu.
+[treeopen] TOP.main.sys.mainmem.
 [treeopen] TOP.main.sys.sertx.
 [sst_width] 197
-[signals_width] 150
+[signals_width] 240
 [sst_expanded] 1
-[sst_vpaned_height] 156
+[sst_vpaned_height] 157
 @28
 TOP.main.sys.TXD
+@22
+TOP.main.sys.cpu.pc[15:0]
+@28
+TOP.main.sys.cpu.ifetch
+TOP.main.sys.cpu.exec
+TOP.main.sys.cpu.exec2
+TOP.main.sys.cpu.tload
+TOP.main.sys.cpu.tstore
+TOP.main.sys._cpu_memory_read
+TOP.main.sys._cpu_memory_ack
+TOP.main.sys._mainmem_memory_read
+TOP.main.sys._mainmem_memory_ack
+@22
+TOP.main.sys.cpu.mar[15:0]
+TOP.main.sys.cpu._alu_out[15:0]
+TOP.main.sys.cpu.A[15:0]
+TOP.main.sys.cpu.B[15:0]
+TOP.main.sys._cpu_adrs[15:0]
+TOP.main.sys._mainmem_adrs[11:0]
+TOP.main.sys._mainmem_datao[15:0]
+@28
+TOP.main.sys._cpu_memory_write
+TOP.main.sys._sertx_port_write
+TOP.main.sys.mainmem.memory.wren
+@22
+TOP.main.sys.mainmem.memory.data[15:0]
+@23
+TOP.main.sys.mainmem.memory.wdata[15:0]
+@28
+TOP.main.sys.mainmem.memory.byteena[1:0]
+TOP.main.sys.mainmem.memory.byteen[1:0]
+TOP.main.sys._mainmem_memory_write
+@22
+TOP.main.sys.cpu.mdata[15:0]
+TOP.main.sys.cpu._rf_portareg[3:0]
+TOP.main.sys._cpu_datai[15:0]
+TOP.main.sys._cpu_datao[15:0]
+TOP.main.sys.cpu.rf.r[0][15:0]
+TOP.main.sys.cpu.rf.r[1][15:0]
+TOP.main.sys.cpu.rf.r[2][15:0]
+TOP.main.sys.cpu.rf.r[3][15:0]
+TOP.main.sys.cpu.rf.r[4][15:0]
+TOP.main.sys.cpu.rf.r[5][15:0]
+TOP.main.sys.cpu.rf.r[6][15:0]
+TOP.main.sys.cpu.rf.r[7][15:0]
+TOP.main.sys.cpu.rf.r[8][15:0]
+TOP.main.sys.cpu.rf.r[9][15:0]
+TOP.main.sys.cpu.rf.r[10][15:0]
+TOP.main.sys.cpu.rf.r[11][15:0]
+TOP.main.sys.cpu.rf.r[12][15:0]
+TOP.main.sys.cpu.rf.r[13][15:0]
+TOP.main.sys.cpu.rf.r[14][15:0]
+TOP.main.sys.cpu.rf.r[15][15:0]
+@28
 TOP.main.sys.RXD
 TOP.main.sys.sertx.txbusy
 TOP.main.sys.sertx.tx
@@ -32,7 +89,7 @@ TOP.main.sys.cpu.pc[15:0]
 @28
 TOP.main.sys.sertx.txd1[7:0]
 TOP.main.sim_serrx.rxd
-@821
+@820
 TOP.main.sim_serrx.data[7:0]
 @28
 TOP.main.sim_serrx.done
