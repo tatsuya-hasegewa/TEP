@@ -1,17 +1,3 @@
-declare BUFG interface{
- output O;
- input  I;
-}
-
-declare DCM interface{
- param_int CLKDV_DIVIDE;
- param_str CLK_FEEDBACK;
- input RST, PSINCDEC, PSEN, PSCLK, CLKIN, CLKFB;
- output PSDONE, CLK0, CLK90, CLK180, CLK270,
-        CLK2X, CLK2X180, CLKDV, CLKFX, CLKFX180,
-	LOCKED, STATUS[8];
-}
-
 declare sys interface{
  input m_clock, p_reset;
  input  btn[3], RXD, PS2D, PS2C;
@@ -71,6 +57,4 @@ module top {
    an = board.an;
    board.sw = sw;
   }
-
 }
-%i "sys.nsl"

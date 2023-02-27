@@ -1,0 +1,76 @@
+#include "ram4k.h"
+
+#ifndef SYNTHE
+module altera_bram4k {	//bram sim
+    func_self read;
+    func_self write;
+    mem ram[2048][16];
+    wire wdata[16];
+    reg rdata[16];
+    reg byteen[2];
+
+    rdata := ram[address];
+    byteen := byteena;
+    any{
+        byteen == 2'b01:{
+            q = {8'b0, rdata[7:0]};
+        }
+        byteen == 2'b10:{
+            q = {rdata[15:8], 8'b0};
+        }
+        byteen == 2'b11:{
+            q = rdata;
+        }   
+        byteena == 2'b01:{
+            wdata = {8'b0, data[7:0]};
+        }
+        byteena == 2'b10:{
+            wdata = {data[15:8], 8'b0};
+        }
+        byteena == 2'b11:{
+            wdata = data;
+        }
+        wren: ram[address] := wdata;
+    }
+}
+#endif
+
+module alt_ram4k {
+	reg  in_read=0;
+
+	altera_bram4k memory;
+	
+	wire addr[11];
+	wire byteen[2];
+	wire wdata[16];
+	func_self read(addr);
+	func_self write(addr,byteen,wdata);
+
+	func read{
+		memory.address = addr;
+		memory.wren = 0;	//read
+		memory.byteena = 2'b11;
+	}
+
+	func write{
+		memory.address = addr;
+		memory.wren = 1;	//write
+		memory.byteena = byteen;
+		memory.data = wdata;
+	}
+
+	/*always*/{
+		memory.clock = m_clock;
+		datao = memory.q;
+	}		
+
+	func memory_write {
+		write(adrs[11:1], {ube,lbe}, datai);
+		memory_ack();
+	}
+
+	func memory_read any {
+		~in_read: {read(adrs[11:1]); in_read :=0b1; }
+		 in_read: {read(adrs[11:1]); memory_ack(); in_read := 0b0;}
+	}
+}

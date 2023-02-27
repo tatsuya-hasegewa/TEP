@@ -1,3 +1,5 @@
+#include "serial.h"
+
 module serial_out {
 
  reg txd0[8], txd1[8];

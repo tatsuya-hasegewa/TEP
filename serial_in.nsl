@@ -1,3 +1,5 @@
+#include "serial.h"
+
 /*
   baudclk.baud pulse must be 16 times faster than buad rate
 */
