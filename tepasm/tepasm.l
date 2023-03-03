@@ -95,6 +95,9 @@ char *optable[256];
 "\.long"	{
 		return LONG; 
 		}
+"\.org"	        {
+		return ORIGIN; 
+		}
 
 "db"	{
 		return BYTE; 
@@ -316,6 +319,7 @@ char *optable[256];
 [ \t\r]+        ;       /* ignore whitespace */
 
 .               yyerror("Unknown character");
+
 %%
 static struct node *stable = NULL;
 

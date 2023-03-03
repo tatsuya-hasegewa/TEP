@@ -55,7 +55,7 @@ int lst = 0;
 };
 
 %token <iValue> INTEGER REG LABEL ITYPE I1TYPE RTYPE RITYPE
-%token DEFLBL EQU ALIGN BYTE WORD LONG
+%token DEFLBL EQU ALIGN BYTE WORD LONG ORIGIN
 
 %type <nPtr> stmt expr con
 
@@ -104,8 +104,8 @@ stmt:
                { $$ = opr(RTYPE,3, con($1), con($2), con($4)); }
         | RITYPE REG ',' REG ',' expr '\n'
                { $$ = opr(RITYPE,4, con($1), con($2), con($4), $6); }
+        | ORIGIN expr      { $$ = opr(ORIGIN, 1, $2); }
         ;
-
 
 
 %%
@@ -351,6 +351,18 @@ int ex(nodeType *p, int reg, int pres) {
                 link = link->link;
                 }
               break;
+  case ORIGIN:
+    data = p->opr.op[0]->con.value;
+    if(data < pc){
+      fprintf(stderr,"cannot backspace location cnt.\n");
+      exit(1);
+    }else{
+      imem[pc].len = data-pc;
+      imem[pc].data = 0;
+      imem[pc].offset = 0;
+      pc = data;
+    }
+    break;
  }
 return 0;
 }
