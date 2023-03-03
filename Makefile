@@ -39,13 +39,14 @@ sim: $(SIMVFILES) $(TARGET).mem
 	sed -i -e"s/top = new V.*;/top = new V$(SIMTOP);/g" $(TESTBENCH).cpp
 	verilator -Wno-STMTDLY -Wno-TIMESCALEMOD -Wno-REALCVT -Wno-INFINITELOOP -Wno-IMPLICIT -Wno-WIDTH -Wno-BLKANDNBLK --default-language 1364-2005 -cc --trace --trace-underscore $(SIMVFILES) --top-module $(SIMTOP) -exe $(TESTBENCH).cpp -O3
 	make -C ./obj_dir/ -f V$(SIMTOP).mk
-	./obj_dir/V$(SIMTOP)
+	cp ./obj_dir/V$(SIMTOP) simExe
+	rm timer.s
 
 $(TARGET).s:	$(TARGET).c
 	lcc -S $(TARGET).c
 
 $(TARGET).mem:	tepasm/tepasm $(TARGET).s
-	sh asm.sh  $(TARGET).s | tee $(TARGET).mem
+	sh asm.sh  $(TARGET).s > $(TARGET).mem
 
 tepasm/tepasm:
 	( cd tepasm; make all )
@@ -72,5 +73,5 @@ distclean:
 
 clean:
 	-rm $(CLEAN) 2> /dev/null
-	-rm -rf obj_dir
+	-rm -rf obj_dir out
 	-(cd tepasm; rm $(ASMCLEANS))
