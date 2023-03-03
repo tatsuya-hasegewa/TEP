@@ -54,7 +54,7 @@
 #define BYTESZ 0b0	//メモリで使用
 #define WORDSZ 0b1	//メモリで使用
 
-#define int_a 0x00b6	//割り込み先番地(固定番地)30に仮決定
+#define int_a 0x0800	//割り込み先番地(固定番地)0800に仮決定
 #define start_pc 0x0000		//スタートPC
 
 #define int_f interrupt_f
@@ -114,7 +114,6 @@ module tep {
 				}
 			Rtype: any{
 				RINT: {
-					int_f := 0b0;
 					wb();
 					ifetch(ipc);
 				}else: {
@@ -314,68 +313,6 @@ module cla16 {
 		of = tmp[16]^to[15];
 		}
 }
-#ifdef REGFILESYN
-module reg16 {
-	
-	reg R01[16],R02[16],R03[16],R04[16],R05[16],R06[16],R07[16];
-	reg R08[16],R09[16],R10[16],R11[16],R12[16],R13[16],R14[16],R15[16];
-	
-	func wt any {
-		wtreg == 0x1: R01 := regin;
-		wtreg == 0x2: R02 := regin;
-		wtreg == 0x3: R03 := regin;
-		wtreg == 0x4: R04 := regin;
-		wtreg == 0x5: R05 := regin;
-		wtreg == 0x6: R06 := regin;
-		wtreg == 0x7: R07 := regin;
-		wtreg == 0x8: R08 := regin;
-		wtreg == 0x9: R09 := regin;
-		wtreg == 0xa: R10 := regin;
-		wtreg == 0xb: R11 := regin;
-		wtreg == 0xc: R12 := regin;
-		wtreg == 0xd: R13 := regin;
-		wtreg == 0xe: R14 := regin;
-		wtreg == 0xf: R15 := regin;
-	}
-	func ra any {
-		portareg == 0x0: porta = 0x0000;
-		portareg == 0x1: porta = R01;
-		portareg == 0x2: porta = R02;
-		portareg == 0x3: porta = R03;
-		portareg == 0x4: porta = R04;
-		portareg == 0x5: porta = R05;
-		portareg == 0x6: porta = R06;
-		portareg == 0x7: porta = R07;
-		portareg == 0x8: porta = R08;
-		portareg == 0x9: porta = R09;
-		portareg == 0xa: porta = R10;
-		portareg == 0xb: porta = R11;
-		portareg == 0xc: porta = R12;
-		portareg == 0xd: porta = R13;
-		portareg == 0xe: porta = R14;
-		portareg == 0xf: porta = R15;
-	}
-	func rb any {
-		portbreg == 0x0: portb = 0x0000;
-		portbreg == 0x1: portb = R01;
-		portbreg == 0x2: portb = R02;
-		portbreg == 0x3: portb = R03;
-		portbreg == 0x4: portb = R04;
-		portbreg == 0x5: portb = R05;
-		portbreg == 0x6: portb = R06;
-		portbreg == 0x7: portb = R07;
-		portbreg == 0x8: portb = R08;
-		portbreg == 0x9: portb = R09;
-		portbreg == 0xa: portb = R10;
-		portbreg == 0xb: portb = R11;
-		portbreg == 0xc: portb = R12;
-		portbreg == 0xd: portb = R13;
-		portbreg == 0xe: portb = R14;
-		portbreg == 0xf: portb = R15;
-	}
-
-}
-#else
 
 module reg16 {
 	mem r[16][16];
@@ -389,10 +326,7 @@ module reg16 {
 		portbreg == 0x0: portb = 0x0000;
 		else: portb = r[portbreg];
 	}
-
 }
-
-#endif
 
 module alu16 {
 	wire a32[32];
