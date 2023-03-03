@@ -1,7 +1,7 @@
 #include "serial.h"
 #include "tep.h"
 #include "ram4k.h"
-
+#include "timer.h"
 
 #ifndef SYNTHE
 declare sys {
@@ -20,6 +20,7 @@ module sys {
  alt_ram4k	mainmem;
  serial_in  serrx;
  serial_out sertx;
+ timer timer1;
 
  reg interval[16]=0, run=0;
  reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
@@ -51,7 +52,7 @@ module sys {
  
  func cpu.memory_write any {
 	cpu.adrs[15:12] == 0x0: {
-		mainmem.memory_write(cpu.adrs[11:0],cpu.datao);
+		mainmem.memory_write(cpu.adrs,cpu.datao);
 		if(cpu.ube) mainmem.ube();
 		if(cpu.lbe) mainmem.lbe();
 		if(mainmem.memory_ack) cpu.memory_ack();
@@ -86,6 +87,11 @@ module sys {
 		   seg3 := cpu.datao[15:8];
 		   cpu.memory_ack();
 		}
+	0xf000 <= cpu.adrs && cpu.adrs <= 0xf007: /*F000 ~ F007 int timer1*/
+			{
+			timer1.write(cpu.adrs[2:1], cpu.datao);
+		   	cpu.memory_ack();
+		}
 	}
  
  func cpu.memory_read any {
@@ -104,13 +110,20 @@ module sys {
 		   cpu.datai = {0x00, sw};
 		   cpu.memory_ack();
 		}
+	0xf000 <= cpu.adrs && cpu.adrs <= 0xf007: /*F000 ~ F007 int timer1*/
+			{
+			cpu.datai = timer1.read(cpu.adrs[2:1]);
+		   	cpu.memory_ack();
+		}
 	cpu.adrs[15:12] == 0x0: {
 		ledout := cpu.adrs[7:0];
-		cpu.datai = mainmem.memory_read(cpu.adrs[11:0]).datao;
+		cpu.datai = mainmem.memory_read(cpu.adrs).datao;
 		if(cpu.ube) mainmem.ube();
 		if(cpu.lbe) mainmem.lbe();
 		if(mainmem.memory_ack) cpu.memory_ack();
 		}
- 
+	}
+	func timer1.intr{
+		cpu.int_signal();
 	}
 }
