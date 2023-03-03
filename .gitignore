@@ -11,3 +11,6 @@ tep.v
 top.v
 Altera/synth
 *.mif
+*.asm
+out
+simExe
