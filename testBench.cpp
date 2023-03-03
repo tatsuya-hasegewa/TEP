@@ -3,6 +3,8 @@
 #include "verilated_vcd_c.h"
 #include "Vmain___024root.h"
 #include "Vmain.h"
+#include <unistd.h>
+#include <getopt.h>
 
 uint64_t main_time = 0;
 
@@ -26,12 +28,14 @@ public:
         top = new Vmain;
         tfp = new VerilatedVcdC;
         top->trace(tfp, 99);
-        tfp->open("tep.vcd");
         resetCore();
     }
     ~Test(void)
     {
-        tfp->close();
+        if (tfp->isOpen())
+        {
+            tfp->close();
+        }
         top->final();
     };
     unsigned long long tick(void)
@@ -46,7 +50,10 @@ public:
     };
     void dump(void)
     {
-        tfp->dump(m_clock_count);
+        if (tfp->isOpen())
+        {
+            tfp->dump(m_clock_count);
+        }
     };
     void step(void)
     {
@@ -54,6 +61,27 @@ public:
         eval();
         dump();
     };
+    void parseLogOpts(int argc, char **argv)
+    {
+        int opt, longindex;
+        char *Darg = NULL, *aarg = NULL, *symfile = NULL;
+        struct option longopts[] = {
+            {"dump", no_argument, NULL, 'd'},
+            {0, 0, 0, 0},
+        };
+        while ((opt = getopt_long(argc, argv, "d", longopts, &longindex)) != -1)
+        {
+            switch (opt)
+            {
+            case 'd':
+                tfp->open("tep.vcd");
+                break;
+            default:
+                exit(1);
+                break;
+            }
+        }
+    }
     void resetCore(void)
     {
         top->p_reset = 0;
@@ -83,6 +111,7 @@ int main(int argc, char **argv)
     Verilated::traceEverOn(true);
     Test *test;
     test = new Test;
+    test->parseLogOpts(argc, argv);
     while (Verilated::gotFinish())
     {
         test->step();
