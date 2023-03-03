@@ -4,9 +4,9 @@
 module altera_bram4k {	//bram sim
     func_self read;
     func_self write;
-    mem ram[2048][16];
-    wire wdata[16];
-    reg rdata[16];
+    mem ram[DEPTH][WIDTH];
+    wire wdata[WIDTH];
+    reg rdata[WIDTH];
     reg byteen[2];
 
     rdata := ram[address];
@@ -36,17 +36,18 @@ module altera_bram4k {	//bram sim
 #endif
 
 module alt_ram4k {
-	reg  in_read=0;
 
 	altera_bram4k memory;
 	
-	wire addr[11];
+	reg prev_req[LENGTH] = 1'b1;	//リセットvector以外なら何でもいい
+	wire addr[LENGTH];
 	wire byteen[2];
-	wire wdata[16];
+	wire wdata[WIDTH];
 	func_self read(addr);
 	func_self write(addr,byteen,wdata);
 
 	func read{
+		prev_req := addr;
 		memory.address = addr;
 		memory.wren = 0;	//read
 		memory.byteena = 2'b11;
@@ -65,12 +66,14 @@ module alt_ram4k {
 	}		
 
 	func memory_write {
-		write(adrs[11:1], {ube,lbe}, datai);
+		write(LENGTH'(adrs >> ADDR_LSB), {ube,lbe}, datai);
 		memory_ack();
 	}
 
-	func memory_read any {
-		~in_read: {read(adrs[11:1]); in_read :=0b1; }
-		 in_read: {read(adrs[11:1]); memory_ack(); in_read := 0b0;}
+	func memory_read {
+		read(LENGTH'(adrs >> ADDR_LSB));
+		if(prev_req == addr){
+			memory_ack();
+		}
 	}
 }
