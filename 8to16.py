@@ -29,8 +29,8 @@ def mifGen(input):
         if (addr != 0) and ((addr % 8 == 0) and cnt % 2 == 0):
             buf += f'\n'
 
-        if ((cnt % 2) == 0):
-            buf += f' {i}'
+        if ((cnt % 2) == 1):
+            buf += f'{i} '
             addr += 1
         else:
             buf += f'{i}'
