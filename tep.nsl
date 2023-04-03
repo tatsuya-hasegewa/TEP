@@ -61,7 +61,7 @@
 
 module tep {
 
-	reg	 pc[16]=0, ipc[16]=0;
+	reg	 pc[16]=0;
 
 	reg	 interrupt_a=0,interrupt_b=0;	//interruptの状態確認用レジスタ
 	reg	 interrupt_f=0;		//interrupt_fは割り込みフラグ(初期状態でOFF)
@@ -88,7 +88,7 @@ module tep {
 	proc ifetch {
 		any{
 		(int_f & interrupt_b): {	//割り込み開始
-			ipc :=pc;
+			memory_write(0xfe02,pc);
 			int_f := 0b0 ;	//割り込み開始後の割り込みを禁止
 			wb(); ifetch(int_a);	//割り込み先の番地に移動
 			}
@@ -115,7 +115,8 @@ module tep {
 			Rtype: any{
 				RINT: {
 					wb();
-					ifetch(ipc);
+					memory_read(0xfe02);
+					ifetch(datai);
 				}else: {
 					A = rf.ra(dR1).porta;
 					B = rf.rb(dR2).portb;

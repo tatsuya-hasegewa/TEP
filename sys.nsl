@@ -24,7 +24,8 @@ module sys {
 
  reg interval[16]=0, run=0;
  reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
- 
+ reg intr_src[3] = 3'b111;
+ reg intr_pc[16];
 
  {
 
@@ -92,6 +93,11 @@ module sys {
 			timer1.write(cpu.adrs[2:1], cpu.datao);
 		   	cpu.memory_ack();
 		}
+	cpu.adrs == 0xfe02: /* intrrupted pc */
+	    {
+			intr_pc := cpu.datao;
+		   	cpu.memory_ack();
+		}
 	}
  
  func cpu.memory_read any {
@@ -115,6 +121,16 @@ module sys {
 			cpu.datai = timer1.read(cpu.adrs[2:1]);
 		   	cpu.memory_ack();
 		}
+	cpu.adrs == 0xfe00: /* intr source */
+	    {
+			cpu.datai = 16'(intr_src);
+		   	cpu.memory_ack();
+		}
+	cpu.adrs == 0xfe02: /* intrrupted pc */
+	    {
+			cpu.datai = intr_pc;
+		   	cpu.memory_ack();
+		}
 	cpu.adrs[15:12] == 0x0: {
 		ledout := cpu.adrs[7:0];
 		cpu.datai = mainmem.memory_read(cpu.adrs).datao;
@@ -123,7 +139,11 @@ module sys {
 		if(mainmem.memory_ack) cpu.memory_ack();
 		}
 	}
+
+#define TIMER 3'b000
+
 	func timer1.intr{
+		intr_src := TIMER;
 		cpu.int_signal();
 	}
 }
