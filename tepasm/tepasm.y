@@ -55,7 +55,7 @@ int lst = 0;
 };
 
 %token <iValue> INTEGER REG LABEL ITYPE I1TYPE RTYPE RITYPE
-%token DEFLBL EQU ALIGN BYTE WORD LONG ORIGIN
+%token DEFLBL EQU ALIGN BYTE WORD LONG COMM LCOMM ORIGIN
 
 %type <nPtr> stmt expr con
 
@@ -96,6 +96,8 @@ stmt:
         | BYTE expr      { $$ = opr(BYTE, 1, $2); }
         | WORD expr      { $$ = opr(WORD, 1, $2); }
         | LONG expr      { $$ = opr(LONG, 1, $2); }
+        | COMM LABEL ',' expr { $$ = opr(COMM, 2, con($2), $4); }
+        | LCOMM LABEL ',' expr { $$ = opr(LCOMM, 2, con($2), $4); }
 	| I1TYPE REG ','  expr '\n'
 			{ $$ = opr(ITYPE,4,con($1), con(0), con($2), $4); }
 	| ITYPE REG ','  REG ',' expr '\n'
@@ -229,7 +231,7 @@ int i;
 
 int ex(nodeType *p, int reg, int pres) {
  labelp *link;
- int id, data, i;
+ int id, data, i, len;
  if(!p) return 0;
  if(p->type != typeOpr) return 1;
  switch(p->opr.oper) {
@@ -263,6 +265,7 @@ int ex(nodeType *p, int reg, int pres) {
 		  }
 		else {
 			imem[pc].sft = 0;
+			imem[pc].data = 0;
 			imem[pc].pc = pc;
 			if(labeltable[id].link) {
 				imem[pc].link = labeltable[id].link;
@@ -362,6 +365,30 @@ int ex(nodeType *p, int reg, int pres) {
       imem[pc].offset = 0;
       pc = data;
     }
+    break;
+  case COMM:
+  case LCOMM:
+        id = p->opr.op[0]->con.value;
+        if(labeltable[id].stat == defined) {
+          fprintf(stderr,"Double defined label %s\n",	id2sym(id));
+          exit(1);
+				}
+        labeltable[id].stat = defined;
+	      labeltable[id].id = id; 
+        labeltable[id].data = pc;
+        link = labeltable[id].link;
+        while(link) {
+          link->data += ((pc + link->offset) & 0xffff) << link->sft;
+          link = link->link;
+        }
+        len = p->opr.op[1]->con.value;
+        if(lst){
+          fprintf(lfile,"%04X:\t\t\t%s:\t/*%d byte 0 padding*/\n", pc,id2sym(id),len);
+        }
+        imem[pc].len =len;
+        imem[pc].data = 0;
+        imem[pc].offset = 0;
+        pc+=len;
     break;
  }
 return 0;

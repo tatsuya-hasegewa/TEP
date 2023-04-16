@@ -82,6 +82,7 @@ char *optable[256];
 "\.size".*$      ;       /* ignore comments */
 "\.ident".*$      ;       /* ignore comments */
 "\.data".*$      ;       /* ignore comments */
+"\.bss".*$      ;       /* ignore comments */
 
 "\.align"	{
 		return ALIGN; 
@@ -94,6 +95,12 @@ char *optable[256];
 		}
 "\.long"	{
 		return LONG; 
+		}
+"\.comm"	{
+		return COMM; 
+		}
+"\.lcomm"	{
+		return LCOMM; 
 		}
 "\.org"	        {
 		return ORIGIN; 
