@@ -54,7 +54,7 @@
 #define BYTESZ 0b0	//メモリで使用
 #define WORDSZ 0b1	//メモリで使用
 
-#define int_a 0x0800	//割り込み先番地(固定番地)0800に仮決定
+#define int_a 0x6800	//割り込み先番地(固定番地)0800に仮決定
 #define start_pc 0x0000		//スタートPC
 
 #define int_f interrupt_f

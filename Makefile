@@ -29,6 +29,8 @@ test:
 	echo $(SRCS)
 	echo $(SIMSRCS)
 	echo $(SIMVFILES)
+	echo $(COMPILE.c)
+	echo $(OUTPUT_OPTION)
 
 sim: $(SIMVFILES) $(TARGET).mem
 	cp $(TARGET).mem $(SYSMEM)
@@ -40,7 +42,6 @@ sim: $(SIMVFILES) $(TARGET).mem
 	verilator -Wno-STMTDLY -Wno-TIMESCALEMOD -Wno-REALCVT -Wno-INFINITELOOP -Wno-IMPLICIT -Wno-WIDTH -Wno-BLKANDNBLK --default-language 1364-2005 -cc --trace --trace-underscore $(SIMVFILES) --top-module $(SIMTOP) -exe $(TESTBENCH).cpp -O3
 	make -C ./obj_dir/ -f V$(SIMTOP).mk
 	cp ./obj_dir/V$(SIMTOP) simExe
-	rm timer.s
 
 $(TARGET).s:	$(TARGET).c
 	lcc -S $(TARGET).c
