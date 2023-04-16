@@ -52,7 +52,7 @@ module sys {
    }
  
  func cpu.memory_write any {
-	cpu.adrs[15:12] == 0x0: {
+	cpu.adrs < 0x8000 :{
 		mainmem.memory_write(cpu.adrs,cpu.datao);
 		if(cpu.ube) mainmem.ube();
 		if(cpu.lbe) mainmem.lbe();
@@ -131,7 +131,7 @@ module sys {
 			cpu.datai = intr_pc;
 		   	cpu.memory_ack();
 		}
-	cpu.adrs[15:12] == 0x0: {
+	cpu.adrs < 0x8000: {
 		ledout := cpu.adrs[7:0];
 		cpu.datai = mainmem.memory_read(cpu.adrs).datao;
 		if(cpu.ube) mainmem.ube();
