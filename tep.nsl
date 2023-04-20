@@ -90,7 +90,7 @@ module tep {
 		(int_f & interrupt_b): {	//割り込み開始
 			memory_write(0xfe02,pc);
 			int_f := 0b0 ;	//割り込み開始後の割り込みを禁止
-			wb(); ifetch(int_a);	//割り込み先の番地に移動
+			ifetch(int_a);	//割り込み先の番地に移動
 			}
 		else: {	//通常動作
 			nxpc = {inc.do({0b0, pc[15:1]}).out[14:0], 0b0};
@@ -272,7 +272,7 @@ module tep {
 			memory_write(mar, mdata);
 			}
 		}
-		if(memory_ack) {ifetch(pc); wb();}
+		if(memory_ack) {ifetch(pc);}
 	}
 	proc tload {
 		memory_read(mar);
@@ -293,8 +293,8 @@ module tep {
 		}
 		if(memory_ack) {
 			rf.wt(regnum,mdata);
-			ifetch(pc); wb();
-			}
+			ifetch(pc);
+		}
 	}
 }
 
