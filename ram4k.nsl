@@ -22,10 +22,10 @@ module altera_bram4k {	//bram sim
             q = rdata;
         }   
         byteena == 2'b01:{
-            wdata = {8'b0, data[7:0]};
+            wdata = {8'(ram[address] >> 8), data[7:0]};
         }
         byteena == 2'b10:{
-            wdata = {data[15:8], 8'b0};
+            wdata = {data[15:8], 8'(ram[address])};
         }
         byteena == 2'b11:{
             wdata = data;
