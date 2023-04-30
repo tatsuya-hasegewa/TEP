@@ -1,8 +1,8 @@
-module main(p_reset,m_clock,wb);
+module main(reset,p_reset,m_clock,wb);
 parameter STEP=10;
 integer i,j,vcd,conindex;
-input p_reset, m_clock;
-wire p_reset, m_clock;
+input reset, p_reset, m_clock;
+wire reset, p_reset, m_clock;
 output wb;
 wire wb;
 reg int_signal;	//割り込みレジスタ
@@ -29,7 +29,7 @@ wire TXD;
 wire [7:0] led; 
 wire [3:0] an; 
 wire [7:0] sseg; 
-sys sys(.p_reset(p_reset),.m_clock(m_clock),.PS2C(PS2C),.PS2D(PS2D),.RXD(RXD),.btn(btn),.VGA_V(VGA_V),.VGA_H(VGA_H),.VGA_B(VGA_B),.VGA_G(VGA_G),.VGA_R(VGA_R),.TXD(TXD),.led(led),.an(an),.sseg(sseg),.sw(sw));
+sys sys(.p_reset(p_reset),.m_clock(m_clock),.PS2C(PS2C),.PS2D(PS2D),.RXD(RXD),.btn(btn),.VGA_V(VGA_V),.VGA_H(VGA_H),.VGA_B(VGA_B),.VGA_G(VGA_G),.VGA_R(VGA_R),.TXD(TXD),.led(led),.an(an),.sseg(sseg),.sw(sw),.reset(reset));
 wire sim_rxd;
 wire done;
 wire rxready;
@@ -39,11 +39,8 @@ serial_in sim_serrx (.p_reset( p_reset), .m_clock(m_clock), .rxd(sim_rxd), .rxre
 
 assign wb = sys.cpu.wb;
 assign hlt = sys.cpu.hlt;
-assign sim_rxd = p_reset ? 1 : TXD;
+assign sim_rxd = TXD;
 
-//always #(STEP/2) m_clock=~m_clock;
-//ここで割り込みのON,OFFを設定する。
-always #(STEP) int_signal=1;			//割り込みレジスタの値
 
 always @(negedge sys.cpu.m_clock)
 begin
@@ -55,7 +52,6 @@ end
 always @(negedge sys.cpu.m_clock)
 begin
 
- #(STEP)
 if(hlt)
   begin 
   $display("\npc:%x HLT   OP :%b %b %b %b\n  R01:%x R02:%x R03:%x R04:%x R05:%x R06:%x R07:%x R08:%x R09:%x R10:%x R11:%x R12:%x R13:%x R14:%x R15:%x I:%x"
@@ -71,9 +67,6 @@ end
 initial begin		//初期化
  $readmemh("tep.mem", sys.mainmem.memory.ram);
  int_signal=0;		//割り込みレジスタ
- sys.interval = 'hfffc;
-
-#(10000*STEP+(STEP/2)) $finish;
 end
 endmodule
 

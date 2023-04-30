@@ -1,13 +1,4 @@
-declare sys interface{
- input m_clock, p_reset;
- input  btn[3], RXD, PS2D, PS2C;
- output TXD, VGA_R, VGA_G, VGA_B, VGA_H, VGA_V;
- output led[8];
- output sseg[8], an[4];
- input  sw[8];
- input  reset;
- }
-
+#include "sys.h"
 /*
  System module
 */
@@ -39,19 +30,10 @@ module top {
    buff.I = dcm_2.CLKDV;
    */
 
-   board.m_clock = m_clock;
-   board.p_reset = p_reset;
    board.reset = reset;
    
    board.RXD = RXD;
    TXD = board.TXD;
-
-   VGA_R = 0b0;
-   VGA_G = 0b0;
-   VGA_B = 0b0;
-   VGA_H = 0b1;
-   VGA_V = 0b1;
-
    led = board.led;
    sseg = board.sseg;
    an = board.an;

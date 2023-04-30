@@ -63,7 +63,6 @@ public:
         top = new Vmain;
         tfp = new VerilatedVcdC;
         top->trace(tfp, 99);
-        resetCore();
     }
     ~Test(void)
     {
@@ -140,24 +139,21 @@ public:
     }
     void resetCore(void)
     {
-        top->p_reset = 0;
         /* assert reset signal for one clock cycle */
+        while (tick() <= 10)
         {
-            top->p_reset = 1;
-            eval();
-            dump();
-
-            tick();
             eval();
             dump();
         }
+        top->p_reset = 1;
+        top->reset = 1;
+        eval();
+        dump();
+        tick();
         /* negate reset signal */
-        {
-            top->p_reset = 0;
-            tick();
-            eval();
-            dump();
-        }
+        top->reset = 0;
+        eval();
+        dump();
     };
     void disasmTEP()
     {
@@ -200,7 +196,8 @@ int main(int argc, char **argv)
     Test *test;
     test = new Test;
     test->parseLogOpts(argc, argv);
-    while (Verilated::gotFinish())
+    test->resetCore();
+    while (!Verilated::gotFinish())
     {
         test->step();
     }
