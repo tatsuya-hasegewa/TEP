@@ -1,7 +1,7 @@
 SHELL=bash
 FPGABOARD=top
 FPGADIR=Altera
-SYNTHEOPT=-O2 -DSYNTHE
+SYNTHEOPT=-O2 -DSYNTHE -neg_res
 VCD=+vcd=1
 P=
 TARGET=mon
@@ -17,8 +17,9 @@ VERILOG=iverilog
 VVP=vvp
 SIMTOP=main
 TESTBENCH=testBench
-NSLFLAGS  	= -O2
+NSLFLAGS  	= -O2 -neg_res
 SRCS 		= $(wildcard ./*.nsl)
+VFILES		= $(addprefix Altera/, $(patsubst %.nsl,%.v,$(notdir $(SRCS))))
 SIMSRCS		= $(filter-out %top.nsl, $(SRCS))
 SIMVFILES 		= $(addprefix out/, $(patsubst %.nsl,%.v,$(notdir $(SIMSRCS)))) sysmain.v
 
@@ -34,7 +35,6 @@ test:
 
 sim: $(SIMVFILES) $(TARGET).mem
 	cp $(TARGET).mem $(SYSMEM)
-	./8to16.py $(SYSMEM)
 	sed -i -E -e "s/#include \"V.*___024root\.h\"$$/#include \"V$(SIMTOP)___024root\.h\"/g" $(TESTBENCH).cpp
 	sed -i -E -e "s/#include \"V.*[^024root]\.h\"$$/#include \"V$(SIMTOP)\.h\"/g" $(TESTBENCH).cpp
 	sed -i -e"s/V.*\\\*top;/V$(SIMTOP) *top;/g" $(TESTBENCH).cpp
@@ -48,6 +48,7 @@ $(TARGET).s:	$(TARGET).c
 
 $(TARGET).mem:	tepasm/tepasm $(TARGET).s
 	sh asm.sh  $(TARGET).s > $(TARGET).mem
+	./8to16.py $(TARGET).mem
 
 tepasm/tepasm:
 	( cd tepasm; make all )
@@ -61,9 +62,10 @@ out/%.v: $(SIMSRCS)
 	fi
 	$(NSL2VL) $(NSLFLAGS) $(filter $(shell echo $^ | grep "[^ ]*$*.nsl" -o), $^) -o $@
 
-synthe:	$(SRC) $(FPGABOARD).nsl $(TARGET).mem tep.v
-	$(NSL2VLEXE) $(FPGABOARD).nsl $(SYNTHEOPT)
-	mv $(FPGABOARD).v tep.v $(FPGADIR)
+Altera/%.v: $(SRCS)
+	$(NSL2VL) $(SYNTHEOPT) $(filter $(shell echo $^ | grep "[^ ]*$*.nsl" -o), $^) -o $@
+
+synthe:	$(VFILES)
 	./memtomif.py $(TARGET).mem
 	mv $(TARGET).mif $(FPGADIR)/mainmem.mif
 	make -C $(FPGADIR)

@@ -27,6 +27,7 @@ PMODE		= JTAG
 MIFS		:= $(wildcard $(SRCDIR)/*.mif)
 VFILES 		= $(notdir $(wildcard $(SRCDIR)/*.v))
 LIBS		= 
+CLEANVFILES = $(filter-out %altBram4k.v, $(VFILES))
 
 ########
 
@@ -66,6 +67,7 @@ config-n: # without re-compile
 
 clean:
 	rm -rf - $(WORKDIR)
+	rm $(CLEANVFILES) mainmem.mif
 
 ########
 

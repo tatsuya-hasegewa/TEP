@@ -45,7 +45,7 @@ module altera_bram4k (
 	wren,
 	q);
 
-	input	[10:0]  address;
+	input	[13:0]  address;
 	input	[1:0]  byteena;
 	input	  clock;
 	input	[15:0]  data;
@@ -95,13 +95,13 @@ module altera_bram4k (
 		altsyncram_component.lpm_hint = "ENABLE_RUNTIME_MOD=NO",
 		altsyncram_component.lpm_type = "altsyncram",
         altsyncram_component.init_file = "mainmem.mif",
-		altsyncram_component.numwords_a = 2048,
+		altsyncram_component.numwords_a = 16384,
 		altsyncram_component.operation_mode = "SINGLE_PORT",
 		altsyncram_component.outdata_aclr_a = "NONE",
 		altsyncram_component.outdata_reg_a = "UNREGISTERED",
 		altsyncram_component.power_up_uninitialized = "FALSE",
 		altsyncram_component.read_during_write_mode_port_a = "DONT_CARE",
-		altsyncram_component.widthad_a = 11,
+		altsyncram_component.widthad_a = 14,
 		altsyncram_component.width_a = 16,
 		altsyncram_component.width_byteena_a = 2;
 
