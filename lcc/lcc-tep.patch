@@ -161,7 +161,7 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 --- lcc/src/tep.md	Thu Feb 12 17:16:12 2009
 ***************
 *** 0 ****
---- 1,580 ----
+--- 1,591 ----
 + %{
 + /*
 + Tokai Embedded Processor 16  (TEP16)
