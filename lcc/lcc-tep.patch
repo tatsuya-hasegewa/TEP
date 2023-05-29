@@ -189,6 +189,7 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 + extern void stabline(Coordinate *);
 + extern void stabsym(Symbol);
 + extern void stabtype(Symbol);
++ static int local_frame;
 + 
 + #define hasargs(p) (p->syms[0] && p->syms[0]->u.c.v.i > 0 ? 0 : LBURG_MAX)
 + %}
@@ -295,8 +296,8 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 + stmt:	ASGNU1(addr,reg)	"ST1 %1,%0\n"	1	
 + stmt:	ASGNU2(addr,reg)	"ST2 %1,%0\n"	1	
 + stmt:	ASGNP2(addr,reg)	"ST2 %1,%0\n"	1	
-+ stmt:	ARGI2(reg)	"CNST $15,$15,-2\nST2 %0,$15,0\n"	1	
-+ stmt:	ARGU2(reg)	"CNST $15,$15,-2\nST2 %0,$15,0\n"	1	
++ stmt:	ARGI2(reg)	"# ARG\n"	1	
++ stmt:	ARGU2(reg)	"# ARG\n"	1	
 + stmt:	LABELV	"%a:\n"		
 + stmt:	JUMPV(addr)	"JUMP %0\n"	3	
 + stmt:	EQI2(reg,reg)  	"JEQ %0,%1,%a\n"		
@@ -311,7 +312,7 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 + stmt:	LTU2(reg,reg)	"JLTU %0,%1,%a\n"		
 + stmt:	EQU2(reg,reg)	"JEQ %0,%1,%a\n"		
 + stmt:	NEU2(reg,reg)	"JNE %0,%1,%a\n"		
-+ stmt:	CALLV(addr)	"CALL $2,%0\nCNST $15,$15,%a\n"	hasargs(a)	
++ stmt:	CALLV(addr)	"#CALL WITH ARGS\n"	hasargs(a)	
 + stmt:	CALLV(addr)	"CALL $2,%0\n"	1	
 + stmt:	RETI2(reg)	"# RET\n"		
 + stmt:	RETU2(reg)	"# RET\n"		
@@ -348,8 +349,8 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 + reg:	BCOMI2(reg)        	"BCOM %c,%0\n"	2	
 + reg:	BCOMU2(reg)        	"BCOM %c,%0\n"	2	
 + reg:	NEGI2(reg)         	"NEGI2 %c,%0\n"	2	
-+ reg:	LSHI2(reg,cnst4)     	"LSHL %c,%0,%1\n"	2	
-+ reg:	LSHU2(reg,cnst4)     	"LSHL %c,%0,%1\n"	2	
++ reg:	LSHI2(reg,cnst4)     	"LSHL %c,%0,%1  ;lshi\n"	2	
++ reg:	LSHU2(reg,cnst4)     	"LSHL %c,%0,%1  ;lshu\n"	2	
 + reg:	RSHI2(reg,cnst4)	"RSHA %c,%0,%1\n"	2	
 + reg:	RSHU2(reg,cnst4)	"RSHL %c,%0,%1\n"	2	
 + reg:	CVPU2(reg)	"?LSHL %c,%0,0\n"  	move(a)	
@@ -362,17 +363,17 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 + reg:	CVII2(reg) 	"# truncate\n"	1	
 + reg:	CVUU1(reg)	"?LSHL %c,%0,0\n"  	1	
 + reg:	CVUU2(reg)	"?LSHL %c,%0,0\n"  	1	
-+ reg:	CALLI2(addr)  	"CALL $2,%0\nCNST $15,$15,%a\n"	hasargs(a)	
-+ reg:	CALLU2(addr)  	"CALL $2,%0\nCNST $15,$15,%a\n"	hasargs(a)	
-+ reg:	CALLP2(addr)	"CALL $2,%0\nCNST $15,$15,%a\n"	hasargs(a)	
++ reg:	CALLI2(addr)  	"#CALL WITH ARGS\n"	hasargs(a)	
++ reg:	CALLU2(addr)  	"#CALL WITH ARGS\n"	hasargs(a)	
++ reg:	CALLP2(addr)	"#CALL WITH ARGS\n"	hasargs(a)	
 + reg:	CALLI2(addr)	"CALL $2,%0\n"	1	
 + reg:	CALLU2(addr)	"CALL $2,%0\n"	1	
 + reg:	CALLP2(addr)	"CALL $2,%0\n"	1	
-+ reg:	INDIRI1(addr)	"LD1 %c,%0\n"		
-+ reg:	INDIRU1(addr)	"LD1 %c,%0\n"		
-+ reg:	INDIRI2(addr)	"LD2 %c,%0\n"		
-+ reg:	INDIRU2(addr)	"LD2 %c,%0\n"		
-+ reg:	INDIRP2(addr)	"LD2 %c,%0\n"		
++ reg:	INDIRI1(addr)	"LD1 %c,%0      ;indiri\n"		
++ reg:	INDIRU1(addr)	"LD1 %c,%0      ;indiru\n"		
++ reg:	INDIRI2(addr)	"LD2 %c,%0      ;indiri\n"		
++ reg:	INDIRU2(addr)	"LD2 %c,%0      ;indiru\n"		
++ reg:	INDIRP2(addr)	"LD2 %c,%0      ;indirp\n"		
 + reg:	addr		"CNST %c,%0\n"
 + 
 + addr:	reg	"%0,0"	
@@ -520,6 +521,16 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 +                 char *src = preg(intreg);
 +                 if (dst != src)
 +                         print("LSHL %s,%s,0\n", dst, src);
++         }else if(generic(op) == ARG){
++                 print("CNST $15,$15,-2\t;ARG\nST2 %s,$15,0\n",preg(intreg));
++                 framesize += 2;
++         }else if(generic(op) == CALL){
++                 if((p->kids[0]->syms[0]) == NULL){
++                         print("CALL $2,%s,0\t;INDIR_CALL\nCNST $15,$15,%d\n",p->kids[0]->syms[2]->x.name,framesize - local_frame);       
++                 }else{
++                         print("CALL $2,$0,%s\t;CALL\nCNST $15,$15,%d\n",p->kids[0]->syms[0]->x.name,framesize - local_frame);
++                 }
++                 framesize = local_frame;
 +         }
 + }
 + 
@@ -548,7 +559,7 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 +         assert(caller[i] == 0);
 +         offset = maxoffset = 0;
 +         gencode(caller, callee);
-+         framesize = roundup(maxoffset, 2);
++         framesize = local_frame = roundup(maxoffset, 2);
 +         if (framesize > 0)
 +                 print("CNST $15,$15,-%d\n", framesize);
 +         print("; ------------------------------\n");
@@ -742,6 +753,7 @@ diff -N -p -r lcc-4.2/src/tep.md lcc/src/tep.md
 +             clobber,
 +         }
 + };
++ 
 diff -N -p -r lcc-4.2/tep/.tep_here lcc/tep/.tep_here
 *** lcc-4.2/tep/.tep_here	Thu Jan  1 09:00:00 1970
 --- lcc/tep/.tep_here	Thu Feb 12 17:16:12 2009
