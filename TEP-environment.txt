@@ -1,13 +1,18 @@
-TEP-16開発環境メモ		東海大学 清水尚彦
+TEP-16開発環境メモ		東海大学 清水尚彦研究室
+
+   TEPアーキテクチャ用LCCの作成
+   cd lcc
+   make all install
+   で、LCCを作成し、インストールする。
 
    FPGA合成ファイルの作成
-   cd /home/TEP
-   make synthe
-   で、モニタプログラム (mon.c)をコンパイルして、
-   CPU回路のVerilogへの変換を行なった後、
-   XilinxディレクトリにISEに必要なファイルを転送する。
-   これらをISEで合成することで、シリアルポートからの
-   入出力を行なう、マシン語モニタイメージを含め、論理合成できる。
+   make syntheで、FPGA合成ファイルの作成を行う。
+   モニタプログラム (mon.c)をコンパイルして、実行バイナリを生成する。
+   実行バイナリをmemtomif.pyで、Altera FPGAのメモリ初期化フォーマットmifに変換する。
+   nsl2vlでCPU回路のVerilogへの変換を行なった後、
+   Alteraディレクトリに必要なファイルを転送し、論理合成を行う。(Altera/MakefileおよびAltera/mkproj-DE0_CV.tcl参照)
+   
+   合成後は、make downloadで、FPGAへの書き込みを行う。
 
    CPU単体のVerilogファイルは、
    nsl2vl tep.nsl -O
@@ -16,10 +21,11 @@ TEP-16開発環境メモ		東海大学 清水尚彦
    論理シミュレーション
    make TARGET=hello sim
    のように、TARGETにCプログラムのファイル名(拡張子含まず)を指定すると、
-   コンパイルして論理シミュレーションの実行をする。
-   シミュレーションは、VCDファイルを生成するので、
-   gtkwave tep.vcd sys.sig
-   とすると、波形が見られる。
+   コンパイルして論理シミュレーションの実行ファイルsimExeが生成される。
+   simExeを実行すると、シミュレーションが開始される。HLT命令で終了する。
+   simExeは-dオプションでvcd波形のダンプtep.vcd、-lで命令トレースtep.logの出力を行う。
+   gtkwaveの設定サンプルとして、sim.gtkwがある。
+   gtkwave sim.gtkwとすると、設定済み波形が見られる。gtkwave tep.vcdで自分で設定することも可能。
 
    プログラムコンパイル
    lcc -S foo.c
@@ -27,9 +33,8 @@ TEP-16開発環境メモ		東海大学 清水尚彦
    その後、
    sh asm.sh foo.s
    とすることで、スタートアップルーチンを含む、メモリファイルを作成する。
-   この16進ファイルは、ISEでも、論理シミュレーションでも利用可能。
+   8to16.py foo.memで、シミュレーションでロード可能な形式に整形する。
    注意： スタートアップルーチンは、main関数を呼び出すので、mainがないとNG。
-
 
 
 以上
