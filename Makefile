@@ -65,7 +65,7 @@ out/%.v: $(SIMSRCS)
 Altera/%.v: $(SRCS)
 	$(NSL2VL) $(SYNTHEOPT) $(filter $(shell echo $^ | grep "[^ ]*$*.nsl" -o), $^) -o $@
 
-synthe:	$(VFILES)
+synthe:	$(VFILES) $(TARGET).mem
 	./memtomif.py $(TARGET).mem
 	mv $(TARGET).mif $(FPGADIR)/mainmem.mif
 	make -C $(FPGADIR)
