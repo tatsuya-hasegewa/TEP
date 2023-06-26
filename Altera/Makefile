@@ -52,7 +52,7 @@ $(DESIGN).sof: $(DESIGN).qsf
 
 ########
 
-compile: $(DESIGN).qsf
+compile: $(DESIGN).sof
 #	@echo "**** $(DESIGN).fit.summary" | tee -a $(RESULT)
 #	@cat $(DESIGN).fit.summary | tee -a $(RESULT)
 #	@echo "**** $(DESIGN).tan.rpt" | tee -a $(RESULT)
