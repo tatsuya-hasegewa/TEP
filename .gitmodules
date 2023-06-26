@@ -1,0 +1,3 @@
+[submodule "lcc"]
+	path = lcc
+	url = https://github.com/twinkletia/lcc
