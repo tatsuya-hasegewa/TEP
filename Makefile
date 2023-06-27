@@ -1,4 +1,3 @@
-SHELL=bash
 FPGABOARD=top
 FPGADIR=Altera
 SYNTHEOPT=-O2 -DSYNTHE -neg_res
@@ -6,7 +5,7 @@ VCD=+vcd=1
 P=
 TARGET=mon
 CLEANS=tep.v sys.v tep.mem sim.log tepasm/tepasm.exe tep.vcd
-ASMCLEANS = tepasm.tab.o lex.yy.o tepasm.tab.c lex.yy.c tepasm.tab.h tepasm.y~ tepasm.l~ tepasm.h~ Makefile~
+ASMCLEANS = tepasm.tab.o lex.yy.o tepasm.tab.c lex.yy.c tepasm.tab.h tepasm.y~ tepasm.l~ tepasm.h~ Makefile~ tepasm
 CLEANX=$(FPGADIR)/$(TARGET).mem $(FPGADIR)/$(FPGABOARD).v
 CLEANT=$(TARGET).mem $(TARGET).dat $(TARGET).s
 CLEAN=$(CLEANS) $(CLEANT) $(CLEANX)

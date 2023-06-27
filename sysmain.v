@@ -1,5 +1,4 @@
 module main(reset,p_reset,m_clock,wb);
-parameter STEP=10;
 integer i,j,vcd,conindex;
 input reset, p_reset, m_clock;
 wire reset, p_reset, m_clock;
@@ -57,7 +56,7 @@ if(hlt)
   $display("\npc:%x HLT   OP :%b %b %b %b\n  R01:%x R02:%x R03:%x R04:%x R05:%x R06:%x R07:%x R08:%x R09:%x R10:%x R11:%x R12:%x R13:%x R14:%x R15:%x I:%x"
 		 			,sys.cpu.pc,sys.cpu.opreg[15:12],sys.cpu.opreg[11:8],sys.cpu.opreg[7:4],sys.cpu.opreg[3:0], sys.cpu.rf.r[01], sys.cpu.rf.r[02], sys.cpu.rf.r[03], sys.cpu.rf.r[04], sys.cpu.rf.r[05], sys.cpu.rf.r[06], sys.cpu.rf.r[07], sys.cpu.rf.r[08], sys.cpu.rf.r[09], sys.cpu.rf.r[10], sys.cpu.rf.r[11], sys.cpu.rf.r[12], sys.cpu.rf.r[13], sys.cpu.rf.r[14], sys.cpu.rf.r[15], sys.cpu.I);
 
-  $display("\nHALTED at %8d clock", $time/STEP);
+  $display("\nHALTED\n");
    $finish;
   end
 end

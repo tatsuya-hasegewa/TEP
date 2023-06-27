@@ -6,15 +6,13 @@
 #include <unistd.h>
 #include <getopt.h>
 
-uint64_t main_time = 0;
-
 char *Iinst[] = {"CNST", "LD1", "LD2", "ST1", "ST2", "JUMP", "CALL", "JEQ", "JGEI", "JGEU", "JGTI", "JGTU", "JLEI", "JLEU", "JLTI", "JLTU", "JNE"};
 char *Rinst[] = {"MUL", "CVI2", "ADD", "SUB", "NEG", "BAND", "BOR", "BXOR", "BCOM", "DINT", "EINT", "RINT"};
 char *RSinst[] = {"LSHL", "RSHA", "RSHL", "HLT"};
 
 double sc_time_stamp()
 {
-    return main_time;
+    return 0;
 }
 
 unsigned int bitTest(unsigned int x, int bit_position)
@@ -84,7 +82,6 @@ public:
     void eval(void)
     {
         top->eval();
-        main_time++;
     };
     void dump(void)
     {
@@ -147,6 +144,9 @@ public:
         }
         top->p_reset = 1;
         top->reset = 1;
+        eval();
+        dump();
+        tick();
         eval();
         dump();
         tick();
