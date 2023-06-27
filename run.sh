@@ -8,9 +8,8 @@ docker run -it --rm \
     -v $XAUTHORITY:/tmp/.XAuthority \
     -e XAUTHORITY=/tmp/.XAuthority \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    --privileged \
     -v /sys:/sys:ro \
     -v /opt/intelFPGA_lite:/opt/intelFPGA_lite \
-    -v $(pwd):/root \
+    -v $(pwd):/root/TEP \
     tep:v1.0 \
-    /bin/bash -c "pushd /root/lcc && make all install && popd && /bin/bash" \
+    /bin/bash -c "cd /root/TEP/lcc && make all install && cd .. && /bin/bash" \
