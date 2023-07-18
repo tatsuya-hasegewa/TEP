@@ -2,7 +2,7 @@
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
 [*] Tue Feb 21 10:03:35 2023
 [*]
-[dumpfile] "\\wsl$\Ubuntu\home\nao\Lab\TEP\tep.vcd"
+[dumpfile] "tep.vcd"
 [dumpfile_mtime] "Tue Feb 21 09:18:28 2023"
 [dumpfile_size] 94682672
 [savefile] "\\wsl$\Ubuntu\home\nao\Lab\TEP\sim.gtkw"
