@@ -27,35 +27,37 @@
 #define JNE	opreg[14:8] == 0b0010000
 
 /* R type */
-#define MUL         opreg[13:8] == 0b000000		
-#define CVI2        opreg[13:8] == 0b000001		
-#define ADD         opreg[13:8] == 0b000010		
+#define MUL         opreg[13:8] == 0b000000
+#define CVI2        opreg[13:8] == 0b000001
+#define ADD         opreg[13:8] == 0b000010
 #define SUB         opreg[13:8] == 0b000011
 #define NEG         opreg[13:8] == 0b000100
 #define BAND        opreg[13:8] == 0b000101
 #define BOR         opreg[13:8] == 0b000110
 #define BXOR        opreg[13:8] == 0b000111
-#define BCOM        opreg[13:8] == 0b001000	
+#define BCOM        opreg[13:8] == 0b001000
 
-#define DINT        opreg[13:8] == 0b101001		
-#define EINT        opreg[13:8] == 0b101010		
-#define RINT        opreg[13:8] == 0b101011		
+#define DINT        opreg[13:8] == 0b101001
+#define EINT        opreg[13:8] == 0b101010
+#define RINT        opreg[13:8] == 0b101011
+#define LSHL_R      opreg[13:8] == 0b001100
+#define RSHL_R      opreg[13:8] == 0b001101
 
 /* RS type */
-#define LSHL		opreg[13:12] == 0b00		
+#define LSHL		opreg[13:12] == 0b00
 #define RSHA		opreg[13:12] == 0b01
 #define RSHL		opreg[13:12] == 0b10
-#define HLT		opreg[13:12] == 0b11		
+#define HLT		opreg[13:12] == 0b11
 
 #define dR1		opreg[3:0]
 #define dR2		opreg[7:4]
-#define dRSI		opreg[11:8]	//RS‚ÌI
+#define dRSI		opreg[11:8]	//RS?ï¿½ï¿½?ï¿½ï¿½I
 
-#define BYTESZ 0b0	//ƒƒ‚ƒŠ‚ÅŽg—p
-#define WORDSZ 0b1	//ƒƒ‚ƒŠ‚ÅŽg—p
+#define BYTESZ 0b0	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ÅŽg?ï¿½ï¿½p
+#define WORDSZ 0b1	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ÅŽg?ï¿½ï¿½p
 
-#define int_a 0x6800	//Š„‚èž‚Ýæ”Ô’n(ŒÅ’è”Ô’n)0800‚É‰¼Œˆ’è
-#define start_pc 0x0000		//ƒXƒ^[ƒgPC
+#define int_a 0x6800	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½Ýï¿½Ô’n(?ï¿½ï¿½Å’ï¿½Ô’n)0800?ï¿½ï¿½É‰ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+#define start_pc 0x0000		//?ï¿½ï¿½X?ï¿½ï¿½^?ï¿½ï¿½[?ï¿½ï¿½gPC
 
 #define int_f interrupt_f
 
@@ -63,8 +65,8 @@ module tep {
 
 	reg	 pc[16]=0;
 
-	reg	 interrupt_a=0,interrupt_b=0;	//interrupt‚Ìó‘ÔŠm”F—pƒŒƒWƒXƒ^
-	reg	 interrupt_f=0;		//interrupt_f‚ÍŠ„‚èž‚Ýƒtƒ‰ƒO(‰Šúó‘Ô‚ÅOFF)
+	reg	 interrupt_a=0,interrupt_b=0;	//interrupt?ï¿½ï¿½Ìï¿½ÔŠm?ï¿½ï¿½F?ï¿½ï¿½p?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½W?ï¿½ï¿½X?ï¿½ï¿½^
+	reg	 interrupt_f=0;		//interrupt_f?ï¿½ï¿½ÍŠï¿½?ï¿½ï¿½èžï¿½Ýƒt?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½O(?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½Ô‚ï¿½OFF)
 	inc16	 inc ;
 	alu16	 alu;
 	reg16    rf;
@@ -80,21 +82,21 @@ module tep {
 	proc_name tload(mar, regnum, size, pc);
 
 	{
-		interrupt_a := int_signal;//Š„‚èž‚ÝƒŒƒWƒXƒ^a‚ÍŠ„‚èž‚ÝM†Œã‚É•Ï‰»‚·‚éB
-		interrupt_b := interrupt_a;//Š„‚èž‚ÝƒŒƒWƒXƒ^b‚ÍŠ„‚èž‚ÝƒŒƒWƒXƒ^aŒã‚É•Ï‰»‚·‚éB(Š„‚èž‚ÝM†“ü—ÍŒã)
+		interrupt_a := int_signal;//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½W?ï¿½ï¿½X?ï¿½ï¿½^a?ï¿½ï¿½ÍŠï¿½?ï¿½ï¿½èžï¿½ÝM?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½É•Ï‰ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½B
+		interrupt_b := interrupt_a;//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½W?ï¿½ï¿½X?ï¿½ï¿½^b?ï¿½ï¿½ÍŠï¿½?ï¿½ï¿½èžï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½W?ï¿½ï¿½X?ï¿½ï¿½^a?ï¿½ï¿½?ï¿½ï¿½É•Ï‰ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½B(?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½ÝM?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ÍŒï¿½)
 	}
 
-	func start ifetch(start_pc);		//ƒXƒ^[ƒgƒAƒbƒvŠJŽn
+	func start ifetch(start_pc);		//?ï¿½ï¿½X?ï¿½ï¿½^?ï¿½ï¿½[?ï¿½ï¿½g?ï¿½ï¿½A?ï¿½ï¿½b?ï¿½ï¿½v?ï¿½ï¿½J?ï¿½ï¿½n
 	proc ifetch {
 		any{
-		(int_f & interrupt_b): {	//Š„‚èž‚ÝŠJŽn
+		(int_f & interrupt_b): {	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½ÝŠJ?ï¿½ï¿½n
 			memory_write(0xfe02,pc);
-			int_f := 0b0 ;	//Š„‚èž‚ÝŠJŽnŒã‚ÌŠ„‚èž‚Ý‚ð‹ÖŽ~
-			ifetch(int_a);	//Š„‚èž‚Ýæ‚Ì”Ô’n‚ÉˆÚ“®
+			int_f := 0b0 ;	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½ÝŠJ?ï¿½ï¿½n?ï¿½ï¿½?ï¿½ï¿½ÌŠï¿½?ï¿½ï¿½èžï¿½Ý‚ï¿½?ï¿½ï¿½ÖŽ~
+			ifetch(int_a);	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½èžï¿½Ýï¿½Ì”Ô’n?ï¿½ï¿½ÉˆÚ“ï¿½
 			}
-		else: {	//’Êí“®ì
+		else: {	//?ï¿½ï¿½Êí“®?ï¿½ï¿½?ï¿½ï¿½
 			nxpc = {inc.do({0b0, pc[15:1]}).out[14:0], 0b0};
-			memory_read(pc);	//–½—ß“Ç‚Ýo‚µ
+			memory_read(pc);	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ß“Ç‚Ýo?ï¿½ï¿½?ï¿½ï¿½
 			if(memory_ack) {
 				exec(datai);
 				pc := nxpc;
@@ -103,11 +105,11 @@ module tep {
 		}
 	}
 
-	proc exec {	//Rƒ^ƒCƒvARSƒ^ƒCƒvŽÀsAIƒ^ƒCƒv‚ÍŽŸ‚Ìpc‚É”ò‚Ô
+	proc exec {	//R?ï¿½ï¿½^?ï¿½ï¿½C?ï¿½ï¿½v?ï¿½ï¿½ARS?ï¿½ï¿½^?ï¿½ï¿½C?ï¿½ï¿½v?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½s?ï¿½ï¿½AI?ï¿½ï¿½^?ï¿½ï¿½C?ï¿½ï¿½v?ï¿½ï¿½ÍŽï¿½?ï¿½ï¿½?ï¿½ï¿½pc?ï¿½ï¿½É”ï¿½?ï¿½ï¿½
 		{
 			any {
 			Itype: {
-				memory_read(pc);	//–½—ß“Ç‚Ýo‚µ
+				memory_read(pc);	//?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ß“Ç‚Ýo?ï¿½ï¿½?ï¿½ï¿½
 				if(memory_ack) {
 					exec2(datai);
 					}
@@ -131,16 +133,18 @@ module tep {
 					BOR:  rf.wt(dR1, alu.do_bor(A,B).out);
 					BXOR: rf.wt(dR1, alu.do_bxor(A,B).out);
 					BCOM: rf.wt(dR1, alu.do_bcom(B).out);
+					LSHL_R: rf.wt(dR1,alu.do_lshl(B,A).out);
+					RSHL_R: rf.wt(dR1,alu.do_rshl(B,A).out);
 					DINT:int_f := 0b0;
 					EINT:int_f := 0b1;
 					}
 				}
-			} //Rtype I—¹
+			} //Rtype ?ï¿½ï¿½I?ï¿½ï¿½?ï¿½ï¿½
 			RStype:{
 				B = rf.rb(dR2).portb;
 				any {
 				HLT: finish;
-				else: ifetch(pc); 
+				else: ifetch(pc);
 				}
 				wb();
 				any {
@@ -149,18 +153,18 @@ module tep {
 				RSHL: rf.wt(dR1,alu.do_rshl(B,{0x000,dRSI}).out);
 				HLT: hlt();
 				}
-			}	//RSƒ^ƒCƒvI—¹
+			}	//RS?ï¿½ï¿½^?ï¿½ï¿½C?ï¿½ï¿½v?ï¿½ï¿½I?ï¿½ï¿½?ï¿½ï¿½
 		}
-	}	//nxpc‚Ì•À—ñˆ—•”I—¹
-	}	//proc exec‚ÌI—¹
+	}	//nxpc?ï¿½ï¿½Ì•ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½I?ï¿½ï¿½?ï¿½ï¿½
+	}	//proc exec?ï¿½ï¿½ÌI?ï¿½ï¿½?ï¿½ï¿½
 
-	proc exec2 {		//Iƒ^ƒCƒvŽÀs—pƒXƒe[ƒW
+	proc exec2 {		//I?ï¿½ï¿½^?ï¿½ï¿½C?ï¿½ï¿½v?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½s?ï¿½ï¿½p?ï¿½ï¿½X?ï¿½ï¿½e?ï¿½ï¿½[?ï¿½ï¿½W
 		{
 		nxpc = {inc.do({0b0, pc[15:1]}).out[14:0], 0b0};
 		A = rf.ra(dR1).porta;
 		B = rf.rb(dR2).portb;
 		any {
-		Itype: 
+		Itype:
 			{
 			wb();
 			any{
@@ -173,8 +177,8 @@ module tep {
 			LD2: tload(alu.do_add(I,B).out, dR1, WORDSZ, nxpc);
 			ST1: tstore(alu.do_add(I,B).out, dR1, BYTESZ, nxpc);
 			ST2: tstore(alu.do_add(I,B).out, dR1, WORDSZ, nxpc);
-			JUMP: ifetch(alu.do_add(I,B).out); 
-			CALL: { 
+			JUMP: ifetch(alu.do_add(I,B).out);
+			CALL: {
 				ifetch(alu.do_add(I,B).out);
 				rf.wt(dR1,nxpc);
 			}
@@ -317,7 +321,7 @@ module cla16 {
 
 module reg16 {
 	mem r[16][16];
-	
+
 	func wt r[wtreg] := regin;
 	func ra any {
 		portareg == 0x0: porta = 0x0000;
@@ -334,7 +338,7 @@ module alu16 {
 	cla16	cla;
 
 	z = (out == 0x0000);
-	
+
 	func do_add	    {out = cla.do(0b0, a, b).out; co=cla.co; of=cla.of;}
 	func do_and	    out = a & b;
 	func do_bcom    out = ~b;
@@ -347,7 +351,7 @@ module alu16 {
 	func do_rshl    out = b >> a;
 	func do_rsha    {
 		a32=32#b;
-		out=(a32>>a)[15:0];	
+		out=(a32>>a)[15:0];
 	}
 	func do_mul     out = a[7:0] * b[7:0];
 }
