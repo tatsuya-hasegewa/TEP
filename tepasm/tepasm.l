@@ -6,15 +6,15 @@
 
   Contact information:
 
-  Naohiko Shimizu, Ph.D. 
+  Naohiko Shimizu, Ph.D.
   IP ARCH, Inc.
   Email: naohiko.shimizu@gmail.com
   URL: http://www.ip-arch.jp/
 
-  
+
   Update informations:
 
-    20-Jan-2009: change operations 
+    20-Jan-2009: change operations
     21-Nov-2008: Initial vesion from snxasm.
 ******************************************/
 
@@ -85,35 +85,35 @@ char *optable[256];
 "\.bss".*$      ;       /* ignore comments */
 
 "\.align"	{
-		return ALIGN; 
+		return ALIGN;
 		}
 "\.byte"	{
-		return BYTE; 
+		return BYTE;
 		}
 "\.word"	{
-		return WORD; 
+		return WORD;
 		}
 "\.long"	{
-		return LONG; 
+		return LONG;
 		}
 "\.comm"	{
-		return COMM; 
+		return COMM;
 		}
 "\.lcomm"	{
-		return LCOMM; 
+		return LCOMM;
 		}
 "\.org"	        {
-		return ORIGIN; 
+		return ORIGIN;
 		}
 
 "db"	{
-		return BYTE; 
+		return BYTE;
 		}
 "dw"	{
-		return WORD; 
+		return WORD;
 		}
 "dd"	{
-		return LONG; 
+		return LONG;
 		}
 
 "equ"|"EQU"		{
@@ -293,6 +293,18 @@ char *optable[256];
 		optable[yylval.iValue] = strcpy((char *)malloc(sizeof(yytext)+1),yytext);
                 return RTYPE;
              }
+"lshl_r"|"LSHL_R"           {
+                yylval.iValue = 0x8c;
+        if(!optable[yylval.iValue])
+        optable[yylval.iValue] = strcpy((char *)malloc(sizeof(yytext)+1),yytext);
+                return RTYPE;
+             }
+"rshl_r"|"RSHL_R"           {
+                yylval.iValue = 0x8d;
+        if(!optable[yylval.iValue])
+        optable[yylval.iValue] = strcpy((char *)malloc(sizeof(yytext)+1),yytext);
+                return RTYPE;
+             }
 "lshl"|"LSHL"           {
                 yylval.iValue = 0xc;
 		if(!optable[yylval.iValue])
@@ -318,7 +330,7 @@ char *optable[256];
                 return RITYPE;
              }
 
-[\._a-zA-Z][\._a-zA-Z0-9]*  { 
+[\._a-zA-Z][\._a-zA-Z0-9]*  {
 		yylval.iValue = slookup(yytext);
                 return LABEL;
             }
