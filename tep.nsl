@@ -42,6 +42,7 @@
 #define RINT        opreg[13:8] == 0b101011
 #define LSHL_R      opreg[13:8] == 0b001100
 #define RSHL_R      opreg[13:8] == 0b001101
+#define RSHA_R      opreg[13:8] == 0b001110
 
 /* RS type */
 #define LSHL		opreg[13:12] == 0b00
@@ -133,8 +134,9 @@ module tep {
 					BOR:  rf.wt(dR1, alu.do_bor(A,B).out);
 					BXOR: rf.wt(dR1, alu.do_bxor(A,B).out);
 					BCOM: rf.wt(dR1, alu.do_bcom(B).out);
-					LSHL_R: rf.wt(dR1,alu.do_lshl(B,A).out);
-					RSHL_R: rf.wt(dR1,alu.do_rshl(B,A).out);
+					LSHL_R: rf.wt(dR1,alu.do_lshl(A,B).out);
+					RSHA_R: rf.wt(dR1,alu.do_rsha(A,B).out);
+					RSHL_R: rf.wt(dR1,alu.do_rshl(A,B).out);
 					DINT:int_f := 0b0;
 					EINT:int_f := 0b1;
 					}

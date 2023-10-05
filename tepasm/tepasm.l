@@ -305,6 +305,12 @@ char *optable[256];
         optable[yylval.iValue] = strcpy((char *)malloc(sizeof(yytext)+1),yytext);
                 return RTYPE;
              }
+"rsha_r"|"RSHA_R"           {
+                yylval.iValue = 0x8e;
+		if(!optable[yylval.iValue])
+		optable[yylval.iValue] = strcpy((char *)malloc(sizeof(yytext)+1),yytext);
+                return RTYPE;
+             }
 "lshl"|"LSHL"           {
                 yylval.iValue = 0xc;
 		if(!optable[yylval.iValue])
