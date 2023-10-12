@@ -4,18 +4,43 @@
 #include "ram4k.h"
 #include "timer.h"
 
+declare segment_reg {
+  input     mode;
+  input     page[3];
+  input     PARin[12];
+  input     PDRin[11];
+  output    PARout[12];
+  output    PDRout[11];
+  func_in seg_read(mode,page);
+  func_in writePAR(mode,page,PARin);
+  func_in writePDR(mode,page,PDRin);
+}
+
 module sys {
+
+    /* For MMU */
+  func_self access_err, length_err, bus_err;
+  wire       in_sel[16], out_sel[16], adr_sel[18];
+  func_self mrd(adr_sel);
+  func_self mwt(adr_sel, out_sel);
+  reg       mmu_buf[16], PA[18];
+  reg       SSR2[16];
+  reg    ssr0_mode[2]=0, ssr0_page[3]=0, ssr0_sw=0,
+         non_resident=0, readonly_error=0, length_error=0;
 
  tep  	cpu;
  alt_ram4k	mainmem;
  serial_in  serrx;
  serial_out sertx;
  timer timer1;
+ segment_reg   seg;
 
  reg run=0;
  reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
  reg intr_src[3] = 3'b111;
  reg intr_pc[16];
+
+  wire       APF[3], BN[7], nBN[7], DIB[6], ACF[2], ED, AIB, PLF[7];
 
  {
 
@@ -33,7 +58,20 @@ module sys {
    led = ledout;
    sseg = ~ssegr; an = ~anr;
    }
- 
+
+  {
+
+    APF = cpu.adrs[15:13];
+    BN  = cpu.adrs[12:06];
+    nBN = ~cpu.adrs[12:06];
+    DIB = cpu.adrs[05:00];
+    ACF = seg.PDRout[1:0];
+    ED  = seg.PDRout[2];
+    AIB = seg.PDRout[3];
+    PLF = seg.PDRout[10:04];
+
+  }
+
  func cpu.memory_write any {
 	cpu.adrs < 0x8000 :{
 		mainmem.memory_write(cpu.adrs,cpu.datao);
@@ -82,7 +120,7 @@ module sys {
 		   	cpu.memory_ack();
 		}
 	}
- 
+
  func cpu.memory_read any {
 	cpu.adrs == 0xe000: /* keyboard data */
 	        {
@@ -130,3 +168,172 @@ module sys {
 		cpu.int_signal();
 	}
 }
+
+#define PDR_WRITE {out_sel[14:08],out_sel[6],out_sel[3:1]}
+#define PAR_WRITE (out_sel[11:0])
+
+  func mwt any {
+    /* Physical memory write */
+    NO_MAPPED: { wt(adr_sel, out_sel, cpu.byte); }
+
+    EABMAP: { ewt({0o00,adr_sel[11:00]}, out_sel, cpu.byte); }
+    MAPPED: any {
+      /* Processor Status Word */
+      MAPPING == 0o7776: cpu.pswt( out_sel );
+
+      /* Segment Registers mode、pageは例外発生時のmode,pageを示す、swはMMUの状態を示す*/
+      MAPPING == 0o7572: {
+        non_resident := out_sel[15];
+        length_error := out_sel[14];
+        readonly_error := out_sel[13];
+        ssr0_mode := out_sel[6:5];
+        ssr0_page := out_sel[3:1];
+        ssr0_sw := out_sel[0];
+      } /* SSR0 */
+      SEGMENT == {0o23,0b1}: { seg.writePAR(0b0,adr_sel[3:1],PAR_WRITE); } /* KISA0-7 */
+      SEGMENT == {0o23,0b0}: { seg.writePDR(0b0,adr_sel[3:1],PDR_WRITE); } /* KISD0-7 */
+      SEGMENT == {0o76,0b1}: { seg.writePAR(0b1,adr_sel[3:1],PAR_WRITE); } /* UISA0-7 */
+      SEGMENT == {0o76,0b0}: { seg.writePDR(0b1,adr_sel[3:1],PDR_WRITE); } /* UISD0-7 */
+    }
+  }
+/*
+ * Memory Management Unit
+ */
+#define CPU_MODE (&cpu.pswout[15:14])
+#define SSR2_LOCK (non_resident | readonly_error | length_error)
+
+  {
+    state_name s0,s1,s2,s3;
+    first_state s0;
+    state s0 {
+      /* Virtual Address 160000 to 177777 is mapped from 760000 to 777777 */
+      if(~ssr0_sw) if(~Rk.active) {
+        if(cpu.rd) mmu_buf := mrd( {(&APF),(&APF),cpu.adrs} ).in_sel;
+        if(cpu.wt) mwt( {(&APF),(&APF),cpu.adrs}, cpu.dato );
+        if(cpu.rd | cpu.wt) goto s3;
+      }
+      /* Compute Physical Address */
+      if(ssr0_sw & (cpu.rd | cpu.wt)) {
+        seg.seg_read(CPU_MODE, APF);
+        PA := {mmu_adder.do({0b00000,BN}, seg.PARout, 0b0).out,DIB};
+        goto s1;
+      }
+      if(cpu.rd & cpu.inst & ~SSR2_LOCK) SSR2 := cpu.adrs;
+    }
+    state s1 {
+      /* Read PAR from segment reg */
+      seg.seg_read(CPU_MODE, APF);
+      /* set W reg of PDR */
+      if(cpu.wt) seg.writePDR(CPU_MODE, APF, {PLF,0b1,ED,ACF});
+      /* Access Control Error Detection */
+      if( (ACF == 0b00) | (ACF == 0b10) | (^cpu.pswout[15:14])) { non_resident := 0b1; access_err(); }
+      if( (ACF == 0b01) & cpu.wt) { readonly_error := 0b1; access_err(); }
+      /* Page Length Error Detection */
+      mmu_adder.do(12#PLF, 12#nBN, 0b1);
+      if(~ED &~mmu_adder.c &~mmu_adder.z ) { length_error := 0b1; length_err(); }
+      if( ED & mmu_adder.c &~mmu_adder.z ) { length_error := 0b1; length_err(); }
+      /* If any error was detected ... */
+      if(BUS_ERROR) {
+        bus_err();
+        cpu.error();
+        goto s0;
+      }
+      if(access_err | length_err) {
+        if(~SSR2_LOCK) {
+          ssr0_mode := cpu.pswout[15:14];
+          ssr0_page := APF;
+        }
+        cpu.fault();
+        goto s0;
+      }
+      /* If All Green */
+      if(~access_err & ~length_err & ~bus_err) { goto s2; }
+    }
+    state s2 if(~Rk.active) {
+      if(cpu.rd) mmu_buf := mrd(PA).in_sel;
+      if(cpu.wt) mwt(PA, cpu.dato);
+      goto s3;
+    }
+    state s3 {
+      cpu.rdy();
+      if(cpu.rd) cpu.dati = mmu_buf;
+      goto s0;
+    }
+  } /* end of mmu */
+
+
+module segment_reg {
+  /* Kernel Mode Page Address Reg and Page Discription Reg */
+  reg  k_par0[12]=0, k_pdr0[11]=0;
+  reg  k_par1[12]=0, k_pdr1[11]=0;
+  reg  k_par2[12]=0, k_pdr2[11]=0;
+  reg  k_par3[12]=0, k_pdr3[11]=0;
+  reg  k_par4[12]=0, k_pdr4[11]=0;
+  reg  k_par5[12]=0, k_pdr5[11]=0;
+  reg  k_par6[12]=0, k_pdr6[11]=0;
+  reg  k_par7[12]=0, k_pdr7[11]=0;
+  /* User Mode Page Address Reg and Page Discription Reg */
+  reg  u_par0[12]=0, u_pdr0[11]=0;
+  reg  u_par1[12]=0, u_pdr1[11]=0;
+  reg  u_par2[12]=0, u_pdr2[11]=0;
+  reg  u_par3[12]=0, u_pdr3[11]=0;
+  reg  u_par4[12]=0, u_pdr4[11]=0;
+  reg  u_par5[12]=0, u_pdr5[11]=0;
+  reg  u_par6[12]=0, u_pdr6[11]=0;
+  reg  u_par7[12]=0, u_pdr7[11]=0;
+
+  func seg_read any {
+    (~mode)&(page == 0o0): { PARout = k_par0; PDRout = k_pdr0; }
+    (~mode)&(page == 0o1): { PARout = k_par1; PDRout = k_pdr1; }
+    (~mode)&(page == 0o2): { PARout = k_par2; PDRout = k_pdr2; }
+    (~mode)&(page == 0o3): { PARout = k_par3; PDRout = k_pdr3; }
+    (~mode)&(page == 0o4): { PARout = k_par4; PDRout = k_pdr4; }
+    (~mode)&(page == 0o5): { PARout = k_par5; PDRout = k_pdr5; }
+    (~mode)&(page == 0o6): { PARout = k_par6; PDRout = k_pdr6; }
+    (~mode)&(page == 0o7): { PARout = k_par7; PDRout = k_pdr7; }
+    ( mode)&(page == 0o0): { PARout = u_par0; PDRout = u_pdr0; }
+    ( mode)&(page == 0o1): { PARout = u_par1; PDRout = u_pdr1; }
+    ( mode)&(page == 0o2): { PARout = u_par2; PDRout = u_pdr2; }
+    ( mode)&(page == 0o3): { PARout = u_par3; PDRout = u_pdr3; }
+    ( mode)&(page == 0o4): { PARout = u_par4; PDRout = u_pdr4; }
+    ( mode)&(page == 0o5): { PARout = u_par5; PDRout = u_pdr5; }
+    ( mode)&(page == 0o6): { PARout = u_par6; PDRout = u_pdr6; }
+    ( mode)&(page == 0o7): { PARout = u_par7; PDRout = u_pdr7; }
+  }
+  func writePAR any {
+    (~mode)&(page == 0o0): k_par0 := PARin;
+    (~mode)&(page == 0o1): k_par1 := PARin;
+    (~mode)&(page == 0o2): k_par2 := PARin;
+    (~mode)&(page == 0o3): k_par3 := PARin;
+    (~mode)&(page == 0o4): k_par4 := PARin;
+    (~mode)&(page == 0o5): k_par5 := PARin;
+    (~mode)&(page == 0o6): k_par6 := PARin;
+    (~mode)&(page == 0o7): k_par7 := PARin;
+    ( mode)&(page == 0o0): u_par0 := PARin;
+    ( mode)&(page == 0o1): u_par1 := PARin;
+    ( mode)&(page == 0o2): u_par2 := PARin;
+    ( mode)&(page == 0o3): u_par3 := PARin;
+    ( mode)&(page == 0o4): u_par4 := PARin;
+    ( mode)&(page == 0o5): u_par5 := PARin;
+    ( mode)&(page == 0o6): u_par6 := PARin;
+    ( mode)&(page == 0o7): u_par7 := PARin;
+  }
+  func writePDR any {
+    (~mode)&(page == 0o0): k_pdr0 := PDRin;
+    (~mode)&(page == 0o1): k_pdr1 := PDRin;
+    (~mode)&(page == 0o2): k_pdr2 := PDRin;
+    (~mode)&(page == 0o3): k_pdr3 := PDRin;
+    (~mode)&(page == 0o4): k_pdr4 := PDRin;
+    (~mode)&(page == 0o5): k_pdr5 := PDRin;
+    (~mode)&(page == 0o6): k_pdr6 := PDRin;
+    (~mode)&(page == 0o7): k_pdr7 := PDRin;
+    ( mode)&(page == 0o0): u_pdr0 := PDRin;
+    ( mode)&(page == 0o1): u_pdr1 := PDRin;
+    ( mode)&(page == 0o2): u_pdr2 := PDRin;
+    ( mode)&(page == 0o3): u_pdr3 := PDRin;
+    ( mode)&(page == 0o4): u_pdr4 := PDRin;
+    ( mode)&(page == 0o5): u_pdr5 := PDRin;
+    ( mode)&(page == 0o6): u_pdr6 := PDRin;
+    ( mode)&(page == 0o7): u_pdr7 := PDRin;
+  }
+}/* end of segment */
