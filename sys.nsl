@@ -4,18 +4,31 @@
 #include "ram4k.h"
 #include "timer.h"
 
+declare segment_reg {
+  input     mode;
+  input     page[3];
+  input     PARin[12];
+  output    PARout[12];
+  func_in seg_read(mode,page);
+  func_in writePAR(mode,page,PARin);
+}
+
 module sys {
 
  tep  	cpu;
  alt_ram4k	mainmem;
  serial_in  serrx;
  serial_out sertx;
+ Mmu_add  mmu_adder;
  timer timer1;
 
  reg run=0;
  reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
  reg intr_src[3] = 3'b111;
  reg intr_pc[16];
+ reg ssr0_sw=0
+
+  wire       APF[3], BN[7], nBN[7], DIB[6], ACF[2], ED, AIB,;
 
  {
 
@@ -33,7 +46,14 @@ module sys {
    led = ledout;
    sseg = ~ssegr; an = ~anr;
    }
- 
+
+   {
+    APF = cpu.adrs[15:13];
+    BN  = cpu.adrs[12:06];
+    nBN = ~cpu.adrs[12:06];
+    DIB = cpu.adrs[05:00];
+   }
+
  func cpu.memory_write any {
 	cpu.adrs < 0x8000 :{
 		mainmem.memory_write(cpu.adrs,cpu.datao);
@@ -81,8 +101,13 @@ module sys {
 			intr_pc := cpu.datao;
 		   	cpu.memory_ack();
 		}
+  	0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
+        {
+      sertx.port_write(cpu.datao[7:0]);
+      cpu.memory_ack();
+  }
 	}
- 
+
  func cpu.memory_read any {
 	cpu.adrs == 0xe000: /* keyboard data */
 	        {
@@ -121,6 +146,12 @@ module sys {
 		if(cpu.lbe) mainmem.lbe();
 		if(mainmem.memory_ack) cpu.memory_ack();
 		}
+
+  0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
+      {
+    sertx.port_write(cpu.datao[7:0]);
+    cpu.memory_ack();
+     }
 	}
 
 #define TIMER 3'b000
@@ -129,4 +160,98 @@ module sys {
 		intr_src := TIMER;
 		cpu.int_signal();
 	}
+
+/*
+ * Memory Management Unit
+ */
+
+ #define CPU_MODE (&cpu.pswout[15:14])
+
+ {
+  {
+    state_name s0,s1,s2;
+    first_state s0;
+    state s0 {
+      /* Virtual Address 160000 to 177777 is mapped from 760000 to 777777 */
+      if(~ssr0_sw) {
+        goto s2;
+      }
+      /* Compute Physical Address */
+      if(ssr0_sw ) {
+        seg.seg_read(CPU_MODE, APF);
+        PA := {mmu_adder.do({0b00000,BN}, seg.PARout, 0b0).out,DIB};
+        goto s1;
+      }
+    }
+    state s1 {
+      if(cpu.rd) mmu_buf := mrd(PA).in_sel;
+      if(cpu.wt) mwt(PA, cpu.dato);
+      goto s2;
+    }
+    state s2 {
+      cpu.rdy();
+      if(cpu.rd) cpu.dati = mmu_buf;
+      goto s0;
+    }
+  } /* end of mmu */
+ }
 }
+
+module segment_reg {
+  /* Kernel Mode Page Address Reg and Page Discription Reg */
+  reg  k_par0[12]=0;
+  reg  k_par1[12]=0;
+  reg  k_par2[12]=0;
+  reg  k_par3[12]=0;
+  reg  k_par4[12]=0;
+  reg  k_par5[12]=0;
+  reg  k_par6[12]=0;
+  reg  k_par7[12]=0;
+
+    /* User Mode Page Address Reg and Page Discription Reg */
+  reg  u_par0[12]=0;
+  reg  u_par1[12]=0;
+  reg  u_par2[12]=0;
+  reg  u_par3[12]=0;
+  reg  u_par4[12]=0;
+  reg  u_par5[12]=0;
+  reg  u_par6[12]=0;
+  reg  u_par7[12]=0;
+
+  func seg_read any {
+    (~mode)&(page == 0o0): { PARout = k_par0; }
+    (~mode)&(page == 0o1): { PARout = k_par1; }
+    (~mode)&(page == 0o2): { PARout = k_par2; }
+    (~mode)&(page == 0o3): { PARout = k_par3; }
+    (~mode)&(page == 0o4): { PARout = k_par4; }
+    (~mode)&(page == 0o5): { PARout = k_par5; }
+    (~mode)&(page == 0o6): { PARout = k_par6; }
+    (~mode)&(page == 0o7): { PARout = k_par7; }
+    ( mode)&(page == 0o0): { PARout = u_par0; }
+    ( mode)&(page == 0o1): { PARout = u_par1; }
+    ( mode)&(page == 0o2): { PARout = u_par2; }
+    ( mode)&(page == 0o3): { PARout = u_par3; }
+    ( mode)&(page == 0o4): { PARout = u_par4; }
+    ( mode)&(page == 0o5): { PARout = u_par5; }
+    ( mode)&(page == 0o6): { PARout = u_par6; }
+    ( mode)&(page == 0o7): { PARout = u_par7; }
+  }
+  func writePAR any {
+    (~mode)&(page == 0o0): k_par0 := PARin;
+    (~mode)&(page == 0o1): k_par1 := PARin;
+    (~mode)&(page == 0o2): k_par2 := PARin;
+    (~mode)&(page == 0o3): k_par3 := PARin;
+    (~mode)&(page == 0o4): k_par4 := PARin;
+    (~mode)&(page == 0o5): k_par5 := PARin;
+    (~mode)&(page == 0o6): k_par6 := PARin;
+    (~mode)&(page == 0o7): k_par7 := PARin;
+    ( mode)&(page == 0o0): u_par0 := PARin;
+    ( mode)&(page == 0o1): u_par1 := PARin;
+    ( mode)&(page == 0o2): u_par2 := PARin;
+    ( mode)&(page == 0o3): u_par3 := PARin;
+    ( mode)&(page == 0o4): u_par4 := PARin;
+    ( mode)&(page == 0o5): u_par5 := PARin;
+    ( mode)&(page == 0o6): u_par6 := PARin;
+    ( mode)&(page == 0o7): u_par7 := PARin;
+  }
+}/* end of segment */
