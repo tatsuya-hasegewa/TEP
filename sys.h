@@ -7,4 +7,8 @@ declare sys
     output sseg[8], an[4];
     input sw[8];
     input reset;
+    input adrs[16];
+    output madr[16];
+    output ssr0[2];
+    output cmode[2];
 }

@@ -21,14 +21,18 @@ module sys {
  serial_out sertx;
  Mmu_add  mmu_adder;
  timer timer1;
+ segment_reg   seg;
 
  reg run=0;
  reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
  reg intr_src[3] = 3'b111;
  reg intr_pc[16];
- reg ssr0_sw=0
+ reg    mmu_buf[16], PA[18];
+ reg    ssr0_mode[2]=0, ssr0_page[3]=0, ssr0_sw=0, non_resident=0, readonly_error=0, length_error=0;
+ reg   cmode=[2];
 
-  wire       APF[3], BN[7], nBN[7], DIB[6], ACF[2], ED, AIB,;
+  wire       APF[3], BN[7], nBN[7], DIB[6], ACF[2], ED, AIB;
+  wire       in_sel[16], out_sel[16], adr_sel[18];
 
  {
 
@@ -48,11 +52,22 @@ module sys {
    }
 
    {
+    madr = mmu_buf;
+    ssr0 = ssr0_sw;
+    cmode = cmode;
+   }
+
+   {
     APF = cpu.adrs[15:13];
     BN  = cpu.adrs[12:06];
     nBN = ~cpu.adrs[12:06];
     DIB = cpu.adrs[05:00];
    }
+
+
+  #define MAPPING   adr_sel[11:00]
+  #define PAR_WRITE (out_sel[11:0])
+  #define PAR_READ  ({0b0000,seg.PARout})
 
  func cpu.memory_write any {
 	cpu.adrs < 0x8000 :{
@@ -103,9 +118,20 @@ module sys {
 		}
   	0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
         {
-      sertx.port_write(cpu.datao[7:0]);
+      adr_sel :=cpu.datao;
       cpu.memory_ack();
-  }
+    }
+	cpu.adrs == 0xd018: /* SSR0 */
+	    {
+			out_sel := cpu.datao;
+		   	cpu.memory_ack();
+    }
+
+	cpu.adrs == 0xde00: /* mode */
+	    {
+			cmode := cpu.datao[1:0];
+		   	cpu.memory_ack();
+		}
 	}
 
  func cpu.memory_read any {
@@ -149,9 +175,19 @@ module sys {
 
   0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
       {
-    sertx.port_write(cpu.datao[7:0]);
+    cpu.datai = seg.seg_read(CPU_MODE, APF)
     cpu.memory_ack();
      }
+	cpu.adrs == 0xd018: /* SSR0 */
+	    {
+			cpu.datai = {non_resident,length_error,readonly_error,(0b000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
+		   	cpu.memory_ack();
+		}
+	cpu.adrs == 0xde00: /* mode */
+	    {
+			cpu.datai = cmode;
+		   	cpu.memory_ack();
+		}
 	}
 
 #define TIMER 3'b000
@@ -165,7 +201,7 @@ module sys {
  * Memory Management Unit
  */
 
- #define CPU_MODE (&cpu.pswout[15:14])
+ #define CPU_MODE (&cmode)
 
  {
   {
@@ -174,6 +210,8 @@ module sys {
     state s0 {
       /* Virtual Address 160000 to 177777 is mapped from 760000 to 777777 */
       if(~ssr0_sw) {
+       if(cpu.rd) mmu_buf := mrd( {(&APF),(&APF),cpu.adrs} ).in_sel;
+       if(cpu.wt) mwt( {(&APF),(&APF),cpu.adrs}, cpu.dato );
         goto s2;
       }
       /* Compute Physical Address */
@@ -189,7 +227,7 @@ module sys {
       goto s2;
     }
     state s2 {
-      cpu.rdy();
+//      cpu.rdy();
       if(cpu.rd) cpu.dati = mmu_buf;
       goto s0;
     }
