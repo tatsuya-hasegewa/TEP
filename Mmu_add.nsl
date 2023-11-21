@@ -1,9 +1,4 @@
-declare mmu_4 {
-	input     a[4],b[4],ci;
-	output    out[4],n,z,v,c;
-	output    gm,pm;
-	func_in do(a,b,ci);
-}
+#include "Mmu_add.h"
 
 module mmu_4 {
 	wire       c0,c1,c2,c3;
@@ -33,40 +28,29 @@ module mmu_4 {
 	}
 }
 
-declare Mmu_add {
-	input     a[12],b[12],ci;
-	output    out[12];
-	output    n,z,v,c;
-	func_in do(a,b,ci);
-}
-
 module Mmu_add {
-	mmu_4   ad2,ad1,ad0;
-	wire       c3,c7,c11;
-	wire       gm0,gm1,gm2;
-	wire       pm0,pm1,pm2;
+	mmu_4   ad1,ad0;
+	wire       c3,c7;
+	wire       gm0,gm1;
+	wire       pm0,pm1;
 
 	func do {
-		ad2.do(a[11:08],b[11:08],c7);
 		ad1.do(a[07:04],b[07:04],c3);
 		ad0.do(a[03:00],b[03:00],ci);
 
-    out = {ad2.out,ad1.out,ad0.out};
+    out = {ad1.out,ad0.out};
 
-		n = ad2.n;
-		z = ad2.z & ad1.z & ad0.z;
-		v = ad2.v ^ c11;
-		c = c11;
+		n = ad1.n;
+		z =  ad1.z & ad0.z;
+		v = ad1.v ^ c7;
+		c = c7;
 
 		gm0 = ad0.gm;
 		gm1 = ad1.gm;
-		gm2 = ad2.gm;
 		pm0 = ad0.pm;
 		pm1 = ad1.pm;
-		pm2 = ad2.pm;
 
 		c3 = gm0|(pm0&ci);
 		c7 = gm1|(pm1&gm0)|(pm1&pm0&ci);
-		c11 = gm2|(pm2&gm1)|(pm2&pm1&gm0)|(pm2&pm1&pm0&ci);
 	}
 }

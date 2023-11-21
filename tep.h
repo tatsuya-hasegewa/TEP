@@ -2,6 +2,7 @@
 declare tep
 {
     input datai[16];
+    input mmuadrs[16];
     output datao[16];
     output adrs[16];
     func_out memory_write(adrs, datao);

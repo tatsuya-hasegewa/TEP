@@ -3,8 +3,11 @@
 #include "tep.h"
 #include "ram4k.h"
 #include "timer.h"
-#include "Mmu_add.h"
+//#include "Mmu_add.h"
 
+/*declare mmu_adder{
+	output    mmuadrs;
+}*/
 declare segment_reg {
   input     mode;
   input     page[3];
@@ -20,7 +23,7 @@ module sys {
  alt_ram4k	mainmem;
  serial_in  serrx;
  serial_out sertx;
- Mmu_add  mmu_adder;
+ //Mmu_add  mmu_adder;
  timer timer1;
  segment_reg   seg;
 
@@ -63,64 +66,64 @@ module sys {
 
 
  func cpu.memory_write any {
-	cpu.adrs < 0x8000 :{
-		mainmem.memory_write(cpu.adrs,cpu.datao);
+	mmu_adrs < 0x8000 :{
+		mainmem.memory_write(mmu_adrs,cpu.datao);
 		if(cpu.ube) mainmem.ube();
 		if(cpu.lbe) mainmem.lbe();
 		if(mainmem.memory_ack) cpu.memory_ack();
 		}
-	cpu.adrs == 0xe000: /* display data */
+	mmu_adrs == 0xe000: /* display data */
 	        {
 		   sertx.port_write(cpu.datao[7:0]);
 		   cpu.memory_ack();
 		}
-	cpu.adrs == 0xe002: /* led data */
+	mmu_adrs == 0xe002: /* led data */
 	        {
 		   ledout := cpu.datao[7:0];
 		   cpu.memory_ack();
 		}
-	cpu.adrs == 0xe008: /* led data */
+	mmu_adrs == 0xe008: /* led data */
 	        {
 		   seg0 := cpu.datao[7:0];
 		   cpu.memory_ack();
 		}
-	cpu.adrs == 0xe009: /* led data */
+	mmu_adrs == 0xe009: /* led data */
 	        {
 		   seg1 := cpu.datao[15:8];
 		   cpu.memory_ack();
 		}
-	cpu.adrs == 0xe00a: /* led data */
+	mmu_adrs == 0xe00a: /* led data */
 	        {
 		   seg2 := cpu.datao[7:0];
 		   cpu.memory_ack();
 		}
-	cpu.adrs == 0xe00b: /* led data */
+	mmu_adrs == 0xe00b: /* led data */
 	        {
 		   seg3 := cpu.datao[15:8];
 		   cpu.memory_ack();
 		}
-	0xf000 <= cpu.adrs && cpu.adrs <= 0xf007: /*F000 ~ F007 int timer1*/
+	0xf000 <= mmu_adrs && mmu_adrs <= 0xf007: /*F000 ~ F007 int timer1*/
 			{
-			timer1.write(cpu.adrs[2:1], cpu.datao);
+			timer1.write(mmu_adrs[2:1], cpu.datao);
 		   	cpu.memory_ack();
 		}
-	cpu.adrs == 0xfe02: /* intrrupted pc */
+	mmu_adrs == 0xfe02: /* intrrupted pc */
 	    {
 			intr_pc := cpu.datao;
 		   	cpu.memory_ack();
 		}
-  	0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
+  	0xd000 <= mmu_adrs && mmu_adrs <= 0xd017:/* D000 ~ D017 segmentreg */
         {
       seg.writePAR(cmode,cpu.adrs[15:13],cpu.datao);
       cpu.memory_ack();
     }
-	cpu.adrs == 0xd018: /* SSR0 */
+	mmu_adrs == 0xd018: /* SSR0 */
 	    {
 			out_sel = cpu.datao;
 		   	cpu.memory_ack();
     }
 
-	cpu.adrs == 0xde00: /* mode */
+	mmu_adrs == 0xde00: /* mode */
 	    {
 			cmode := cpu.datao[1:0];
 		   	cpu.memory_ack();
@@ -128,55 +131,55 @@ module sys {
 	}
 
  func cpu.memory_read any {
-	cpu.adrs == 0xe000: /* keyboard data */
+	mmu_adrs == 0xe000: /* keyboard data */
 	        {
 		   cpu.datai = {0x00, serrx.data};
 		   cpu.memory_ack();
 		}
-	cpu.adrs == 0xe001: {/* keyboard, display status */
+	mmu_adrs == 0xe001: {/* keyboard, display status */
 		   cpu.datai = {serrx.rxready, sertx.txbusy,
 		               0b000000, 0x00};
 		   cpu.memory_ack();
 		   }
-	cpu.adrs == 0xe002: /* sw data */
+	mmu_adrs == 0xe002: /* sw data */
 	        {
 		   cpu.datai = {0x00, sw};
 		   cpu.memory_ack();
 		}
-	0xf000 <= cpu.adrs && cpu.adrs <= 0xf007: /*F000 ~ F007 int timer1*/
+	0xf000 <= mmu_adrs && mmu_adrs <= 0xf007: /*F000 ~ F007 int timer1*/
 			{
 			cpu.datai = timer1.read(cpu.adrs[2:1]);
 		   	cpu.memory_ack();
 		}
-	cpu.adrs == 0xfe00: /* intr source */
+	mmu_adrs == 0xfe00: /* intr source */
 	    {
 			cpu.datai = 16'(intr_src);
 		   	cpu.memory_ack();
 		}
-	cpu.adrs == 0xfe02: /* intrrupted pc */
+	mmu_adrs == 0xfe02: /* intrrupted pc */
 	    {
 			cpu.datai = intr_pc;
 		   	cpu.memory_ack();
 		}
-	cpu.adrs < 0x8000: {
-		ledout := cpu.adrs[7:0];
-		cpu.datai = mainmem.memory_read(cpu.adrs).datao;
+	mmu_adrs < 0x8000: {
+		ledout := mmu_adrs[7:0];
+		cpu.datai = mainmem.memory_read(mmu_adrs).datao;
 		if(cpu.ube) mainmem.ube();
 		if(cpu.lbe) mainmem.lbe();
 		if(mainmem.memory_ack) cpu.memory_ack();
 		}
 
-  0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
+  0xd000 <= mmu_adrs && mmu_adrs <= 0xd017:/* D000 ~ D017 segmentreg */
       {
     cpu.datai = seg.PARout;
     cpu.memory_ack();
      }
-	cpu.adrs == 0xd018: /* SSR0 */
+	mmu_adrs == 0xd018: /* SSR0 */
 	    {
 			cpu.datai = {(0b000000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
 		   	cpu.memory_ack();
 		}
-	cpu.adrs == 0xde00: /* mode */
+	mmu_adrs == 0xde00: /* mode */
 	    {
 			cpu.datai = cmode;
 		   	cpu.memory_ack();
@@ -197,13 +200,19 @@ module sys {
  {
   if(ssr0_sw ){
     seg.seg_read(cmode, APF);
-    mmu_adrs := {mmu_adder.do({0b000,BN}, seg.PARout, 0b0).out,DIB};
+    mmu_adrs := {seg.PARout,DIB};
   }
   else{
     mmu_adrs := cpu.adrs;
   }
  }
 }
+
+/*module mmu_adder {
+	APF = cpu.adrs[15:13]
+	DIB = cpu.adrs[07:00]
+	mmu = {seg.seg_read(cmode, APF), DIB};
+}*/
 
 module segment_reg {
   /* Kernel Mode Page Address Reg and Page Discription Reg */
