@@ -3,12 +3,13 @@
 #include "tep.h"
 #include "ram4k.h"
 #include "timer.h"
+#include "Mmu_add.h"
 
 declare segment_reg {
   input     mode;
   input     page[3];
-  input     PARin[12];
-  output    PARout[12];
+  input     PARin[8];
+  output    PARout[8];
   func_in seg_read(mode,page);
   func_in writePAR(mode,page,PARin);
 }
@@ -27,12 +28,12 @@ module sys {
  reg ledout[8], anr[4], ssegr[8], seg0[8], seg1[8], seg2[8], seg3[8];
  reg intr_src[3] = 3'b111;
  reg intr_pc[16];
- reg    mmu_buf[16], PA[18];
- reg    ssr0_mode[2]=0, ssr0_page[3]=0, ssr0_sw=0, non_resident=0, readonly_error=0, length_error=0;
- reg   cmode=[2];
+ reg    mmu_adrs[16];
+ reg    ssr0_mode[2]=0, ssr0_page[3]=0, ssr0_sw=1;
+ reg   cmode[2]=0;
 
-  wire       APF[3], BN[7], nBN[7], DIB[6], ACF[2], ED, AIB;
-  wire       in_sel[16], out_sel[16], adr_sel[18];
+  wire       APF[3], BN[5], nBN[5], DIB[8], ED;
+  wire       in_sel[16], out_sel[16];
 
  {
 
@@ -49,25 +50,17 @@ module sys {
 
    led = ledout;
    sseg = ~ssegr; an = ~anr;
-   }
-
-   {
-    madr = mmu_buf;
-    ssr0 = ssr0_sw;
-    cmode = cmode;
+	 //out_sel := {(0b000000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
    }
 
    {
     APF = cpu.adrs[15:13];
-    BN  = cpu.adrs[12:06];
-    nBN = ~cpu.adrs[12:06];
-    DIB = cpu.adrs[05:00];
+    BN  = cpu.adrs[12:08];
+    nBN = ~cpu.adrs[12:08];
+    DIB = cpu.adrs[07:00];
    }
 
 
-  #define MAPPING   adr_sel[11:00]
-  #define PAR_WRITE (out_sel[11:0])
-  #define PAR_READ  ({0b0000,seg.PARout})
 
  func cpu.memory_write any {
 	cpu.adrs < 0x8000 :{
@@ -118,12 +111,12 @@ module sys {
 		}
   	0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
         {
-      adr_sel :=cpu.datao;
+      seg.writePAR(cmode,cpu.adrs[15:13],cpu.datao);
       cpu.memory_ack();
     }
 	cpu.adrs == 0xd018: /* SSR0 */
 	    {
-			out_sel := cpu.datao;
+			out_sel = cpu.datao;
 		   	cpu.memory_ack();
     }
 
@@ -175,12 +168,12 @@ module sys {
 
   0xd000 <= cpu.adrs && cpu.adrs <= 0xd017:/* D000 ~ D017 segmentreg */
       {
-    cpu.datai = seg.seg_read(CPU_MODE, APF)
+    cpu.datai = seg.PARout;
     cpu.memory_ack();
      }
 	cpu.adrs == 0xd018: /* SSR0 */
 	    {
-			cpu.datai = {non_resident,length_error,readonly_error,(0b000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
+			cpu.datai = {(0b000000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
 		   	cpu.memory_ack();
 		}
 	cpu.adrs == 0xde00: /* mode */
@@ -201,60 +194,37 @@ module sys {
  * Memory Management Unit
  */
 
- #define CPU_MODE (&cmode)
-
  {
-  {
-    state_name s0,s1,s2;
-    first_state s0;
-    state s0 {
-      /* Virtual Address 160000 to 177777 is mapped from 760000 to 777777 */
-      if(~ssr0_sw) {
-       if(cpu.rd) mmu_buf := mrd( {(&APF),(&APF),cpu.adrs} ).in_sel;
-       if(cpu.wt) mwt( {(&APF),(&APF),cpu.adrs}, cpu.dato );
-        goto s2;
-      }
-      /* Compute Physical Address */
-      if(ssr0_sw ) {
-        seg.seg_read(CPU_MODE, APF);
-        PA := {mmu_adder.do({0b00000,BN}, seg.PARout, 0b0).out,DIB};
-        goto s1;
-      }
-    }
-    state s1 {
-      if(cpu.rd) mmu_buf := mrd(PA).in_sel;
-      if(cpu.wt) mwt(PA, cpu.dato);
-      goto s2;
-    }
-    state s2 {
-//      cpu.rdy();
-      if(cpu.rd) cpu.dati = mmu_buf;
-      goto s0;
-    }
-  } /* end of mmu */
+  if(ssr0_sw ){
+    seg.seg_read(cmode, APF);
+    mmu_adrs := {mmu_adder.do({0b000,BN}, seg.PARout, 0b0).out,DIB};
+  }
+  else{
+    mmu_adrs := cpu.adrs;
+  }
  }
 }
 
 module segment_reg {
   /* Kernel Mode Page Address Reg and Page Discription Reg */
-  reg  k_par0[12]=0;
-  reg  k_par1[12]=0;
-  reg  k_par2[12]=0;
-  reg  k_par3[12]=0;
-  reg  k_par4[12]=0;
-  reg  k_par5[12]=0;
-  reg  k_par6[12]=0;
-  reg  k_par7[12]=0;
+  reg  k_par0[8]=0;
+  reg  k_par1[8]=0;
+  reg  k_par2[8]=0;
+  reg  k_par3[8]=0;
+  reg  k_par4[8]=0;
+  reg  k_par5[8]=0;
+  reg  k_par6[8]=0;
+  reg  k_par7[8]=0;
 
     /* User Mode Page Address Reg and Page Discription Reg */
-  reg  u_par0[12]=0;
-  reg  u_par1[12]=0;
-  reg  u_par2[12]=0;
-  reg  u_par3[12]=0;
-  reg  u_par4[12]=0;
-  reg  u_par5[12]=0;
-  reg  u_par6[12]=0;
-  reg  u_par7[12]=0;
+  reg  u_par0[8]=0;
+  reg  u_par1[8]=0;
+  reg  u_par2[8]=0;
+  reg  u_par3[8]=0;
+  reg  u_par4[8]=0;
+  reg  u_par5[8]=0;
+  reg  u_par6[8]=0;
+  reg  u_par7[8]=0;
 
   func seg_read any {
     (~mode)&(page == 0o0): { PARout = k_par0; }

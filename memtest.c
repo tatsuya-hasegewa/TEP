@@ -1,0 +1,21 @@
+volatile unsigned char *flag = (unsigned char *)0xe001;
+volatile unsigned char *data = (unsigned char *)0xe000;
+
+void putchar(w) char w;
+{
+	while ((*flag & 0x40))
+		;
+	*data = w;
+	if (w == '\n')
+		putchar('\r');
+}
+
+int main(){
+    int   *c = (int*)0xd015;
+
+    *c=0x1126;
+
+    putchar(*c) ;
+
+    return 0;
+}
