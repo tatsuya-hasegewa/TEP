@@ -114,7 +114,7 @@ module sys {
 		}
   	0xd000 <= mmu_adrs && mmu_adrs <= 0xd017:/* D000 ~ D017 segmentreg */
         {
-      seg.writePAR(cmode,cpu.adrs[15:13],cpu.datao);
+      seg.writePAR(cmode,mmu_adrs[15:13],cpu.datao);
       cpu.memory_ack();
     }
 	mmu_adrs == 0xd018: /* SSR0 */
