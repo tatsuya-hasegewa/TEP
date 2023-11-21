@@ -197,7 +197,7 @@ module sys {
  {
   if(ssr0_sw ){
     seg.seg_read(cmode, APF);
-    mmu_adrs := {mmu_adder.do({0b000,BN}, seg.PARout, 0b0).out,DIB};
+    mmu_adrs := {seg.PARout,DIB};
   }
   else{
     mmu_adrs := cpu.adrs;
