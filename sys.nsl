@@ -5,9 +5,7 @@
 #include "timer.h"
 //#include "Mmu_add.h"
 
-/*declare mmu_adder{
-	output    mmuadrs;
-}*/
+
 declare segment_reg {
   input     mode;
   input     page[3];
@@ -32,11 +30,11 @@ module sys {
  reg intr_src[3] = 3'b111;
  reg intr_pc[16];
  reg    mmu_adrs[16];
- reg    ssr0_mode[2]=0, ssr0_page[3]=0, ssr0_sw=0;
- reg   cmode[2]=0;
+ //reg    ssr0_mode[2]=0, ssr0_page[3]=0;
+ reg   cmode[2]=1, ssr0_sw=0;
 
   wire       APF[3], BN[5], nBN[5], DIB[8], ED;
-  wire       in_sel[16], out_sel[16];
+//  wire       in_sel[16], out_sel[16];
 
  {
 
@@ -53,7 +51,6 @@ module sys {
 
    led = ledout;
    sseg = ~ssegr; an = ~anr;
-	 //out_sel := {(0b000000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
    }
 
    {
@@ -114,12 +111,12 @@ module sys {
 		}
   	0xd000 <= mmu_adrs && mmu_adrs <= 0xd017:/* D000 ~ D017 segmentreg */
         {
-      seg.writePAR(cmode,mmu_adrs[15:13],cpu.datao);
+      seg.writePAR(cmode,cpu.adrs[15:13],cpu.datao);
       cpu.memory_ack();
     }
 	mmu_adrs == 0xd018: /* SSR0 */
 	    {
-			out_sel = cpu.datao;
+			ssr0_sw := cpu.datao[1:0];
 		   	cpu.memory_ack();
     }
 
@@ -148,7 +145,7 @@ module sys {
 		}
 	0xf000 <= mmu_adrs && mmu_adrs <= 0xf007: /*F000 ~ F007 int timer1*/
 			{
-			cpu.datai = timer1.read(cpu.adrs[2:1]);
+			cpu.datai = timer1.read(mmu_adrs[2:1]);
 		   	cpu.memory_ack();
 		}
 	mmu_adrs == 0xfe00: /* intr source */
@@ -171,12 +168,13 @@ module sys {
 
   0xd000 <= mmu_adrs && mmu_adrs <= 0xd017:/* D000 ~ D017 segmentreg */
       {
+		seg.seg_read(cmode, APF);
     cpu.datai = seg.PARout;
     cpu.memory_ack();
      }
 	mmu_adrs == 0xd018: /* SSR0 */
 	    {
-			cpu.datai = {(0b000000000),ssr0_mode,0b0,ssr0_page,ssr0_sw};
+			cpu.datai = ssr0_sw;
 		   	cpu.memory_ack();
 		}
 	mmu_adrs == 0xde00: /* mode */
@@ -208,32 +206,27 @@ module sys {
  }
 }
 
-/*module mmu_adder {
-	APF = cpu.adrs[15:13]
-	DIB = cpu.adrs[07:00]
-	mmu = {seg.seg_read(cmode, APF), DIB};
-}*/
 
 module segment_reg {
   /* Kernel Mode Page Address Reg and Page Discription Reg */
-  reg  k_par0[8]=0;
-  reg  k_par1[8]=0;
-  reg  k_par2[8]=0;
-  reg  k_par3[8]=0;
-  reg  k_par4[8]=0;
-  reg  k_par5[8]=0;
-  reg  k_par6[8]=0;
-  reg  k_par7[8]=0;
+  reg  k_par0[8]=0x10;
+  reg  k_par1[8]=0x11;
+  reg  k_par2[8]=0x12;
+  reg  k_par3[8]=0x13;
+  reg  k_par4[8]=0x14;
+  reg  k_par5[8]=0x15;
+  reg  k_par6[8]=0x16;
+  reg  k_par7[8]=0x17;
 
     /* User Mode Page Address Reg and Page Discription Reg */
-  reg  u_par0[8]=0;
-  reg  u_par1[8]=0;
-  reg  u_par2[8]=0;
-  reg  u_par3[8]=0;
-  reg  u_par4[8]=0;
-  reg  u_par5[8]=0;
-  reg  u_par6[8]=0;
-  reg  u_par7[8]=0;
+  reg  u_par0[8]=0x10;
+  reg  u_par1[8]=0x20;
+  reg  u_par2[8]=0x30;
+  reg  u_par3[8]=0x40;
+  reg  u_par4[8]=0x50;
+  reg  u_par5[8]=0xd0;
+  reg  u_par6[8]=0xe0;
+  reg  u_par7[8]=0xf0;
 
   func seg_read any {
     (~mode)&(page == 0o0): { PARout = k_par0; }
