@@ -31,7 +31,7 @@ module sys {
  reg intr_pc[16];
  reg    mmu_adrs[16];
  //reg    ssr0_mode[2]=0, ssr0_page[3]=0;
- reg   cmode[2]=1, ssr0_sw=0;
+ reg   cmode[2]=1, ssr0_sw=1;
 
   wire       APF[3], BN[5], nBN[5], DIB[8], ED;
 //  wire       in_sel[16], out_sel[16];
