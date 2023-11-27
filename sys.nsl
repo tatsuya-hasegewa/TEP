@@ -101,7 +101,7 @@ module sys {
 		}
 	0xf000 <= cpu.adrs && cpu.adrs <= 0xf007: /*F000 ~ F007 int timer1*/
 			{
-			timer1.write(cpu.adrs[2:1], cpu.datao);
+			timer1.write(cpu.adrs[2:1], cpu.datao[15:8]);
 		   	cpu.memory_ack();
 		}
 	cpu.adrs == 0xfe02: /* intrrupted pc */
